@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CTI Tool — Import Test Harness (dev tool)</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; background: #14161a; color: #e4e6eb; }
+  h1 { font-size: 1.3rem; }
+  h2 { font-size: 1.05rem; margin-top: 2rem; border-bottom: 1px solid #333; padding-bottom: 0.3rem; }
+  .banner { background: #3a2f10; border: 1px solid #7a5a10; padding: 0.6rem 1rem; border-radius: 6px; margin-bottom: 1.5rem; font-size: 0.9rem; }
+  button { background: #2a2d34; color: #e4e6eb; border: 1px solid #444; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; margin: 0.2rem 0.4rem 0.2rem 0; }
+  button:hover { background: #363a42; }
+  button.danger { border-color: #7a2a2a; }
+  button.danger:hover { background: #4a1e1e; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  table { border-collapse: collapse; width: 100%; margin-top: 0.5rem; }
+  td, th { text-align: left; padding: 0.3rem 0.6rem; border-bottom: 1px solid #2a2d34; font-size: 0.9rem; }
+  pre { background: #1b1d22; padding: 0.8rem; border-radius: 6px; overflow-x: auto; font-size: 0.8rem; max-height: 400px; }
+  .warning-list { color: #e0b84a; font-size: 0.9rem; }
+  .error { color: #e05a5a; font-weight: bold; }
+  .success { color: #6ac97a; }
+  .muted { color: #888; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<h1>CTI Tool — Import Test Harness</h1>
+<div class="banner">
+  This is a throwaway dev/testing page, not the real application. Its only job is to prove
+  <code>parser.js</code> and <code>db.js</code> work correctly together before any UI gets built on top of them.
+  <br><br>
+  <strong>Run this via a local server (e.g. VS Code's Live Server), not by double-clicking the file</strong> —
+  IndexedDB behaves inconsistently opened directly from disk in some browsers.
+</div>
+
+<h2>1. Load a report</h2>
+<input type="file" id="fileInput" accept=".txt">
+<div class="muted" id="fileStatus">No file loaded yet.</div>
+
+<h2>2. Parse</h2>
+<button id="previewBtn" disabled>Preview parse (no DB write)</button>
+<button id="importBtn" disabled>Parse &amp; write to database</button>
+<div id="parseResults"></div>
+
+<h2>3. Current database contents</h2>
+<button id="refreshBtn">Refresh counts</button>
+<div id="dbCounts"></div>
+<details>
+  <summary style="cursor:pointer; margin-top:0.5rem;">Raw JSON dump (all stores)</summary>
+  <pre id="dbJson">(not loaded yet)</pre>
+</details>
+
+<h2>4. Danger zone</h2>
+<button class="danger" id="resetBtn">Reset database (wipe everything)</button>
+
+<script type="module">
+  import { parseReport } from './js/parser.js';
+  import { bulkWriteRecords, dbGetAll, resetDatabase, STORE_NAMES } from './js/db.js';
+
+  let loadedText = null;
+
+  const fileInput = document.getElementById('fileInput');
+  const fileStatus = document.getElementById('fileStatus');
+  const previewBtn = document.getElementById('previewBtn');
+  const importBtn = document.getElementById('importBtn');
+  const parseResults = document.getElementById('parseResults');
+  const dbCounts = document.getElementById('dbCounts');
+  const dbJson = document.getElementById('dbJson');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const resetBtn = document.getElementById('resetBtn');
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    loadedText = await file.text();
+    fileStatus.textContent = `Loaded: ${file.name} (${loadedText.length.toLocaleString()} characters)`;
+    previewBtn.disabled = false;
+    importBtn.disabled = false;
+    parseResults.innerHTML = '';
+  });
+
+  function renderParseResult(result, { wroteToDb }) {
+    const { recordsByStore, warnings } = result;
+    let html = wroteToDb
+      ? '<p class="success">Written to database.</p>'
+      : '<p class="muted">Preview only — nothing written to the database.</p>';
+
+    html += '<table><tr><th>Store</th><th>Records found</th></tr>';
+    for (const [store, records] of Object.entries(recordsByStore)) {
+      html += `<tr><td>${store}</td><td>${records.length}</td></tr>`;
+    }
+    html += '</table>';
+
+    if (warnings.length > 0) {
+      html += `<p class="warning-list"><strong>${warnings.length} warning(s):</strong></p><ul class="warning-list">`;
+      warnings.forEach((w) => { html += `<li>${w}</li>`; });
+      html += '</ul>';
+    } else {
+      html += '<p class="success">No warnings.</p>';
+    }
+
+    parseResults.innerHTML = html;
+  }
+
+  previewBtn.addEventListener('click', () => {
+    try {
+      const result = parseReport(loadedText);
+      renderParseResult(result, { wroteToDb: false });
+    } catch (err) {
+      parseResults.innerHTML = `<p class="error">Parse failed: ${err.message}</p>`;
+    }
+  });
+
+  importBtn.addEventListener('click', async () => {
+    try {
+      const result = parseReport(loadedText);
+      await bulkWriteRecords(result.recordsByStore);
+      renderParseResult(result, { wroteToDb: true });
+      await refreshDbView();
+    } catch (err) {
+      parseResults.innerHTML = `<p class="error">Import failed: ${err.message}</p>`;
+    }
+  });
+
+  async function refreshDbView() {
+    const allData = {};
+    let html = '<table><tr><th>Store</th><th>Records currently stored</th></tr>';
+    for (const storeName of STORE_NAMES) {
+      const records = await dbGetAll(storeName);
+      allData[storeName] = records;
+      html += `<tr><td>${storeName}</td><td>${records.length}</td></tr>`;
+    }
+    html += '</table>';
+    dbCounts.innerHTML = html;
+    dbJson.textContent = JSON.stringify(allData, null, 2);
+  }
+
+  refreshBtn.addEventListener('click', refreshDbView);
+
+  resetBtn.addEventListener('click', async () => {
+    if (!confirm('This will permanently delete all data in this browser\'s database for this tool. Continue?')) return;
+    await resetDatabase();
+    await refreshDbView();
+    parseResults.innerHTML = '<p class="muted">Database reset.</p>';
+  });
+
+  // Show current state on page load.
+  refreshDbView();
+</script>
+
+</body>
+</html>
