@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cyber Threat Intelligence Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div>
+    <h1 class="app-title">Cyber Threat Intelligence Dashboard</h1>
+    <p class="app-subtitle">GDAK internal research &amp; exercise-planning tool</p>
+  </div>
+  <div class="header-actions">
+    <a class="btn" href="test-import.html">Import report</a>
+    <button class="btn" type="button" id="settingsBtn" aria-disabled="true" title="Not built yet">Settings</button>
+  </div>
+</header>
+
+<section class="filter-bar" aria-label="Dashboard filters">
+  <div class="filter-field">
+    <label for="filterSector">Sector</label>
+    <select id="filterSector"><option value="">All sectors</option></select>
+  </div>
+  <div class="filter-field">
+    <label for="filterClient">Client</label>
+    <select id="filterClient"><option value="">All clients</option></select>
+  </div>
+  <div class="filter-field">
+    <label for="filterSeverity">Severity</label>
+    <select id="filterSeverity">
+      <option value="">All severities</option>
+      <option value="5">Critical</option>
+      <option value="4">High</option>
+      <option value="3">Moderate</option>
+      <option value="2">Low</option>
+      <option value="1">Informational</option>
+    </select>
+  </div>
+  <div class="filter-field">
+    <label for="filterTime">Time range</label>
+    <select id="filterTime">
+      <option value="all">All time</option>
+      <option value="12m">Last 12 months</option>
+      <option value="6m">Last 6 months</option>
+      <option value="3m">Last 3 months</option>
+      <option value="1m">Last month</option>
+    </select>
+  </div>
+  <p class="filter-note">Sector and client lists reflect what's currently imported. These don't filter the widgets yet — that gets wired up as each widget is built.</p>
+</section>
+
+<main class="widget-grid" id="widgetGrid" aria-label="Dashboard widgets">
+  <!-- Populated from the widget registry in js/app.js -->
+</main>
+
+<section class="hidden-tray" id="hiddenTray" hidden aria-label="Hidden widgets">
+  <span class="hidden-tray-label">Hidden:</span>
+</section>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

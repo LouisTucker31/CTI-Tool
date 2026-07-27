@@ -1,0 +1,385 @@
+/* ---------------------------------------------------------------------
+   Design tokens
+
+   Palette is a deep navy-slate (not pure black) rather than the generic
+   near-black + acid-green look. The one real accent system is the severity
+   ramp itself (Informational -> Critical) — it's not decoration, it's the
+   actual scale the whole tool measures things on. Confidence is encoded
+   separately: a solid-filled chip means Very High confidence, a hollow
+   outlined chip means anything lower — so hue tells you severity and fill
+   tells you how sure the report was, without stacking two colour scales.
+------------------------------------------------------------------------ */
+
+:root {
+  --bg-base: #10141c;
+  --bg-panel: #171c26;
+  --bg-panel-raised: #1d2330;
+  --border-hairline: #262d3d;
+  --border-hairline-strong: #384057;
+
+  --text-primary: #e8ecf3;
+  --text-secondary: #94a0b8;
+  --text-muted: #5c6780;
+
+  --accent-informational: #6b7a99;
+  --accent-low: #3ba7a0;
+  --accent-moderate: #d1a13f;
+  --accent-high: #cc6a2e;
+  --accent-critical: #d1453d;
+  --accent-live: #3ba7a0;
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ---------------------------------------------------------------------
+   Header
+------------------------------------------------------------------------ */
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1.75rem 2rem 1.1rem;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.app-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.6rem;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.app-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: 0.25rem 0 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.btn {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-hairline-strong);
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: background 0.15s ease;
+}
+
+.btn:hover { background: var(--bg-panel-raised); }
+
+.btn[aria-disabled="true"] {
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+.btn[aria-disabled="true"]:hover { background: var(--bg-panel); }
+
+/* ---------------------------------------------------------------------
+   Filter bar
+------------------------------------------------------------------------ */
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border-hairline);
+  background: var(--bg-panel);
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.filter-field label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+
+.filter-field select {
+  background: var(--bg-base);
+  border: 1px solid var(--border-hairline-strong);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  min-width: 150px;
+}
+
+.filter-note {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0 0 0 auto;
+  max-width: 340px;
+}
+
+/* ---------------------------------------------------------------------
+   Widget grid
+------------------------------------------------------------------------ */
+
+.widget-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: minmax(190px, auto);
+  gap: 1rem;
+  padding: 1.5rem 2rem 1rem;
+}
+
+.span-large-tall { grid-column: span 7; grid-row: span 2; }
+.span-medium { grid-column: span 5; }
+.span-half { grid-column: span 6; }
+.span-third { grid-column: span 4; }
+.span-full { grid-column: span 12; }
+
+@media (max-width: 900px) {
+  .widget-grid { grid-template-columns: 1fr; }
+  .tile { grid-column: span 1 !important; grid-row: auto !important; }
+}
+
+/* ---------------------------------------------------------------------
+   Tile chrome
+------------------------------------------------------------------------ */
+
+.tile {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: tile-in 0.25s ease-out;
+}
+
+@keyframes tile-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile { animation: none; }
+}
+
+.tile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.tile-eyebrow {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  white-space: nowrap;
+}
+
+.tile-status {
+  font-size: 0.6rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.tile-status.live {
+  color: var(--accent-live);
+  border: 1px solid var(--accent-live);
+  background: rgba(59, 167, 160, 0.1);
+}
+
+.tile-status.planned {
+  color: var(--text-muted);
+  border: 1px solid var(--border-hairline-strong);
+}
+
+.tile-controls { display: flex; gap: 0.2rem; }
+
+.tile-controls button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+}
+
+.tile-controls button:hover {
+  background: var(--bg-panel-raised);
+  color: var(--text-primary);
+}
+
+.tile-body {
+  padding: 1rem;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  flex: 1;
+  overflow: auto;
+}
+
+.tile-body.collapsed { display: none; }
+
+.tile-placeholder-note {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------------
+   Signature element: the citation chip.
+   Every stated fact traces back to a source — this makes that literal.
+------------------------------------------------------------------------ */
+
+.cite-chip {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  border-bottom: 1px dotted var(--border-hairline-strong);
+  padding-bottom: 1px;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------
+   Severity / confidence chips
+------------------------------------------------------------------------ */
+
+.severity-chip {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 3px;
+  letter-spacing: 0.02em;
+  display: inline-block;
+}
+
+.severity-informational { color: var(--accent-informational); border: 1px solid var(--accent-informational); background: rgba(107, 122, 153, 0.1); }
+.severity-low { color: var(--accent-low); border: 1px solid var(--accent-low); background: rgba(59, 167, 160, 0.1); }
+.severity-moderate { color: var(--accent-moderate); border: 1px solid var(--accent-moderate); background: rgba(209, 161, 63, 0.1); }
+.severity-high { color: var(--accent-high); border: 1px solid var(--accent-high); background: rgba(204, 106, 46, 0.1); }
+.severity-critical { color: var(--accent-critical); border: 1px solid var(--accent-critical); background: rgba(209, 69, 61, 0.1); }
+
+/* Confidence: solid fill = Very High confidence. Outline-only = anything less. */
+.severity-chip.confidence-solid {
+  background: currentColor;
+  color: var(--bg-panel);
+  border-color: transparent;
+}
+
+/* ---------------------------------------------------------------------
+   Widget content — shared row patterns for the "live" widgets
+------------------------------------------------------------------------ */
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.stat-row:last-of-type { border-bottom: none; }
+.stat-row strong { font-family: var(--font-mono); font-weight: 500; color: var(--text-primary); }
+.stat-row.highlight { align-items: center; }
+
+.tile-footnote {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.report-row {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border-hairline);
+}
+.report-row:last-child { border-bottom: none; }
+
+.report-row-title {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.report-row-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+/* ---------------------------------------------------------------------
+   Hidden-widgets tray
+------------------------------------------------------------------------ */
+
+.hidden-tray {
+  padding: 0 2rem 2rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.hidden-tray-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-right: 0.3rem;
+}
+
+.hidden-pill {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-hairline-strong);
+  color: var(--text-secondary);
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.hidden-pill:hover { background: var(--bg-panel-raised); color: var(--text-primary); }
+
+/* Visible keyboard focus, kept simple and consistent across interactive elements */
+button:focus-visible, select:focus-visible, a:focus-visible {
+  outline: 2px solid var(--accent-low);
+  outline-offset: 2px;
+}
