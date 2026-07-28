@@ -383,3 +383,25 @@ button:focus-visible, select:focus-visible, a:focus-visible {
   outline: 2px solid var(--accent-low);
   outline-offset: 2px;
 }
+
+/* ---------------------------------------------------------------------
+   Import status — feedback shown right after using the header's
+   "Import report" button, before it fills into the live widgets above.
+------------------------------------------------------------------------ */
+
+.import-status {
+  margin: 1rem 2rem 0;
+  padding: 0.9rem 1.1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-hairline-strong);
+  background: var(--bg-panel);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.import-status p { margin: 0.2rem 0; }
+.import-status ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+.import-status .import-status-title { font-weight: 600; color: var(--text-primary); }
+.import-status.success { border-color: var(--accent-live); }
+.import-status.error { border-color: var(--accent-critical); }
+.import-status.error .import-status-title { color: var(--accent-critical); }

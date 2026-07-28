@@ -17,7 +17,8 @@
  * both need real widgets to exist first before they're worth wiring up.
  */
 
-import { dbGetAll } from './db.js';
+import { dbGetAll, bulkWriteRecords } from './db.js';
+import { parseReport } from './parser.js';
 
 // ---------------------------------------------------------------------------
 // Small display helpers
@@ -269,6 +270,13 @@ async function populateFilterOptions() {
   });
 
   const sectorSelect = document.getElementById('filterSector');
+  const clientSelect = document.getElementById('filterClient');
+
+  // Clear everything except the first "All ..." default option, so this can
+  // run again after a new import without piling up duplicate entries.
+  sectorSelect.querySelectorAll('option:not(:first-child)').forEach((opt) => opt.remove());
+  clientSelect.querySelectorAll('option:not(:first-child)').forEach((opt) => opt.remove());
+
   [...sectors].sort().forEach((sector) => {
     const opt = document.createElement('option');
     opt.value = sector;
@@ -276,7 +284,6 @@ async function populateFilterOptions() {
     sectorSelect.appendChild(opt);
   });
 
-  const clientSelect = document.getElementById('filterClient');
   [...clients].sort().forEach((client) => {
     const opt = document.createElement('option');
     opt.value = client;
@@ -289,9 +296,63 @@ async function populateFilterOptions() {
 // Boot
 // ---------------------------------------------------------------------------
 
+async function refreshLiveWidgets() {
+  const grid = document.getElementById('widgetGrid');
+  for (const widget of WIDGETS) {
+    if (widget.status !== 'live') continue;
+    const tile = grid.querySelector(`[data-widget-id="${widget.id}"]`);
+    if (tile) await renderTileBody(tile, widget);
+  }
+}
+
+async function handleImportFile(file) {
+  const statusEl = document.getElementById('importStatus');
+  statusEl.hidden = false;
+  statusEl.className = 'import-status';
+  statusEl.innerHTML = '<p>Parsing&hellip;</p>';
+
+  try {
+    const text = await file.text();
+    const { recordsByStore, warnings } = parseReport(text);
+    await bulkWriteRecords(recordsByStore);
+
+    const counts = Object.entries(recordsByStore)
+      .map(([store, records]) => `${records.length} ${store}`)
+      .join(', ');
+
+    statusEl.classList.add('success');
+    statusEl.innerHTML = `
+      <p class="import-status-title">Imported "${escapeHtml(file.name)}"</p>
+      <p>${escapeHtml(counts)}</p>
+      ${warnings.length > 0
+        ? `<p>${warnings.length} warning(s):</p><ul>${warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join('')}</ul>`
+        : '<p>No warnings.</p>'}
+    `;
+
+    await refreshLiveWidgets();
+    await populateFilterOptions();
+  } catch (err) {
+    statusEl.classList.add('error');
+    statusEl.innerHTML = `<p class="import-status-title">Import failed</p><p>${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function wireImportControls() {
+  const importBtn = document.getElementById('importBtn');
+  const importFileInput = document.getElementById('importFileInput');
+  importBtn.addEventListener('click', () => importFileInput.click());
+  importFileInput.addEventListener('change', () => {
+    const file = importFileInput.files[0];
+    importFileInput.value = ''; // allow re-selecting the same file again later
+    if (file) handleImportFile(file);
+  });
+}
+
 async function boot() {
   const grid = document.getElementById('widgetGrid');
   const hiddenTray = document.getElementById('hiddenTray');
+
+  wireImportControls();
 
   for (const widget of WIDGETS) {
     const tile = buildTile(widget);

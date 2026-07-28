@@ -17,7 +17,8 @@
     <p class="app-subtitle">GDAK internal research &amp; exercise-planning tool</p>
   </div>
   <div class="header-actions">
-    <a class="btn" href="test-import.html">Import report</a>
+    <button class="btn" type="button" id="importBtn">Import report</button>
+    <input type="file" id="importFileInput" accept=".txt" hidden>
     <button class="btn" type="button" id="settingsBtn" aria-disabled="true" title="Not built yet">Settings</button>
   </div>
 </header>
@@ -54,6 +55,8 @@
   </div>
   <p class="filter-note">Sector and client lists reflect what's currently imported. These don't filter the widgets yet — that gets wired up as each widget is built.</p>
 </section>
+
+<section class="import-status" id="importStatus" hidden></section>
 
 <main class="widget-grid" id="widgetGrid" aria-label="Dashboard widgets">
   <!-- Populated from the widget registry in js/app.js -->
