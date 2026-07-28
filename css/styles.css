@@ -551,66 +551,68 @@ button:focus-visible, select:focus-visible, a:focus-visible {
 .map-popup .map-popup-more { font-size: 0.72rem; color: var(--text-muted); margin: 0.3rem 0 0; }
 
 /* ---------------------------------------------------------------------
-   Threat Timeline widget (vis-timeline)
+   Threat Timeline widget — plain HTML/CSS vertical timeline
 ------------------------------------------------------------------------ */
 
-.tile-body-timeline {
-  padding: 0 !important;
+.vtimeline-controls {
   display: flex;
-  flex-direction: column;
-}
-
-.timeline-canvas {
-  flex: 1;
-  min-height: 280px;
-}
-
-.timeline-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.9rem;
   align-items: center;
-  padding: 0.5rem 1rem;
-  border-top: 1px solid var(--border-hairline);
-  font-size: 0.72rem;
-  color: var(--text-secondary);
+  gap: 0.5rem;
+  padding: 0 0 0.8rem;
+}
+.vtimeline-controls label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.vtimeline-controls select {
+  background: var(--bg-base);
+  border: 1px solid var(--border-hairline-strong);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
 }
 
-.timeline-legend-swatch {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  margin-right: 0.35rem;
-  border-radius: 2px;
-  vertical-align: middle;
+.vtimeline-list {
+  max-height: 480px;
+  overflow-y: auto;
+  padding-left: 1.4rem;
 }
-.timeline-legend-note { color: var(--text-muted); margin-left: auto; }
 
-/* vis-timeline ships light-mode chrome by default — same override pattern as
-   Leaflet. Class names below are vis-timeline's real ones, taken from its
-   own stylesheet, not guessed. */
-.vis-timeline { border: none; background: transparent; font-family: var(--font-body); color: var(--text-secondary); }
-.vis-panel.vis-center, .vis-panel.vis-left, .vis-panel.vis-right, .vis-panel.vis-top, .vis-panel.vis-bottom {
-  border-color: var(--border-hairline);
+.vtimeline-entry {
+  position: relative;
+  padding: 0.7rem 0 0.7rem 1.25rem;
+  border-left: 2px solid var(--border-hairline-strong);
 }
-.vis-labelset .vis-label { border-color: var(--border-hairline); color: var(--text-secondary); background: transparent; }
-.vis-time-axis .vis-text { color: var(--text-muted); }
-.vis-time-axis .vis-grid.vis-minor { border-color: var(--border-hairline); }
-.vis-time-axis .vis-grid.vis-major { border-color: var(--border-hairline-strong); }
-.vis-current-time { background-color: var(--accent-critical); }
+.vtimeline-entry:last-child { border-left-color: transparent; }
 
-.vis-item {
+.vtimeline-dot {
+  position: absolute;
+  left: -7px;
+  top: 1rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-informational);
+  border: 2px solid var(--bg-panel);
+}
+.vtimeline-threat .vtimeline-dot { background: var(--accent-high); }
+.vtimeline-incident .vtimeline-dot { background: var(--text-secondary); }
+.vtimeline-forecast .vtimeline-dot { background: var(--bg-panel); border: 2px dashed var(--text-muted); }
+
+.vtimeline-content { padding-left: 0.25rem; }
+.vtimeline-date { font-size: 0.7rem; color: var(--text-muted); font-style: italic; }
+.vtimeline-title { font-family: var(--font-display); font-size: 0.95rem; color: var(--text-primary); margin: 0.15rem 0 0.4rem; }
+.vtimeline-meta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.vtimeline-category-tag {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  border: 1px solid var(--border-hairline-strong);
   border-radius: 3px;
-  font-size: 0.75rem;
+  padding: 0.1rem 0.4rem;
 }
-.vis-item .vis-item-content { padding: 2px 6px; }
-
-.timeline-severity-critical { background: rgba(209, 69, 61, 0.25); border-color: var(--accent-critical); color: var(--text-primary); }
-.timeline-severity-high { background: rgba(204, 106, 46, 0.25); border-color: var(--accent-high); color: var(--text-primary); }
-.timeline-severity-moderate { background: rgba(209, 161, 63, 0.25); border-color: var(--accent-moderate); color: var(--text-primary); }
-.timeline-severity-low { background: rgba(59, 167, 160, 0.25); border-color: var(--accent-low); color: var(--text-primary); }
-.timeline-severity-informational { background: rgba(107, 122, 153, 0.25); border-color: var(--accent-informational); color: var(--text-primary); }
-
-.timeline-incident { background: var(--bg-panel-raised); border-color: var(--text-secondary); }
-
-.timeline-forecast { background: transparent; border-style: dashed; border-color: var(--text-muted); color: var(--text-secondary); }
