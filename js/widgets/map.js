@@ -145,7 +145,7 @@ export function groupLocationsForMap(locations, threatRecords) {
 // ---------------------------------------------------------------------------
 
 function markerRadius(count) {
-  return Math.min(8 + Math.sqrt(count) * 5, 28);
+  return Math.min(4 + Math.sqrt(count) * 2.5, 16);
 }
 
 function severityColor(label) {
@@ -200,12 +200,20 @@ export async function renderWorldMap(container) {
   `;
 
   const mapEl = container.querySelector('.map-canvas');
-  const map = L.map(mapEl, { scrollWheelZoom: false }).setView([20, 10], 2);
+  const worldBounds = L.latLngBounds([-85, -180], [85, 180]);
+  const map = L.map(mapEl, {
+    scrollWheelZoom: false,
+    minZoom: 2,
+    maxBounds: worldBounds,
+    maxBoundsViscosity: 1.0,
+  }).setView([20, 10], 2);
+  map.attributionControl.setPrefix(false); // drop Leaflet's own self-link, keep only the required credits below
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
     subdomains: 'abcd',
     maxZoom: 19,
+    noWrap: true,
   }).addTo(map);
 
   markers.forEach((marker) => {
