@@ -26,7 +26,7 @@
  */
 
 import { dbGetAll } from '../db.js';
-import { escapeHtml, severityChip, citeChip, humanize, SEVERITY_COLOR_VAR } from '../helpers.js';
+import { escapeHtml, severityChip, citeChip, humanize } from '../helpers.js';
 
 // ---------------------------------------------------------------------------
 // Country centroids (approximate — good enough for a country-level dot,
@@ -148,9 +148,26 @@ function markerRadius(count) {
   return Math.min(4 + Math.sqrt(count) * 2.5, 16);
 }
 
-function severityColor(label) {
-  const varName = SEVERITY_COLOR_VAR[label] || SEVERITY_COLOR_VAR.Informational;
-  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#6b7a99';
+const MARKER_TYPE_COLOR_VAR = {
+  affected: '--accent-high',    // orange
+  actor: '--accent-critical',   // red
+};
+
+function markerTypeColor(bucket) {
+  const varName = MARKER_TYPE_COLOR_VAR[bucket] || MARKER_TYPE_COLOR_VAR.affected;
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || '#cc6a2e';
+}
+
+function tooltipHtml(marker) {
+  const bucketLabel = marker.bucket === 'affected' ? 'Affected location' : 'Threat-actor location';
+  return `
+    <div class="map-tooltip">
+      <div class="map-tooltip-title">
+        <span class="map-tooltip-swatch map-tooltip-${marker.bucket}"></span>${escapeHtml(marker.place)}
+      </div>
+      <div class="map-tooltip-meta">${bucketLabel} &middot; ${marker.count} threat${marker.count === 1 ? '' : 's'}</div>
+    </div>
+  `;
 }
 
 function popupHtml(marker) {
@@ -165,7 +182,9 @@ function popupHtml(marker) {
 
   return `
     <div class="map-popup">
-      <p class="map-popup-title">${escapeHtml(marker.place)}</p>
+      <p class="map-popup-title">
+        <span class="map-tooltip-swatch map-tooltip-${marker.bucket}"></span>${escapeHtml(marker.place)}
+      </p>
       <p class="map-popup-meta">${bucketLabel} &middot; ${marker.count} threat${marker.count === 1 ? '' : 's'}</p>
       ${threatsHtml}
       ${more}
@@ -217,7 +236,7 @@ export async function renderWorldMap(container) {
   }).addTo(map);
 
   markers.forEach((marker) => {
-    const color = severityColor(marker.severityLabel);
+    const color = markerTypeColor(marker.bucket);
     const radius = markerRadius(marker.count);
     let layer;
 
@@ -239,8 +258,19 @@ export async function renderWorldMap(container) {
       layer = L.marker([marker.lat, marker.lng], { icon });
     }
 
-    layer.bindTooltip(`${marker.place} &mdash; ${marker.count} threat${marker.count === 1 ? '' : 's'}`);
+    layer.bindTooltip(tooltipHtml(marker));
     layer.bindPopup(popupHtml(marker));
     layer.addTo(map);
   });
+
+  // Leaflet measures its container's width/height once at creation time. This
+  // tile sits in a CSS grid and fades in on an animation, and the dashboard's
+  // custom web fonts can still be loading, so that first measurement is
+  // sometimes taken before layout has fully settled — the usual symptom is
+  // exactly what showed up here: correct height, but blank strips down the
+  // sides because Leaflet thinks the container is narrower than it really is.
+  // Re-measuring shortly after, and again on any future resize, fixes it.
+  requestAnimationFrame(() => map.invalidateSize());
+  setTimeout(() => map.invalidateSize(), 300);
+  new ResizeObserver(() => map.invalidateSize()).observe(mapEl);
 }

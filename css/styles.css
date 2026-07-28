@@ -466,12 +466,26 @@ button:focus-visible, select:focus-visible, a:focus-visible {
   width: 10px;
   height: 10px;
   margin-right: 0.35rem;
-  background: var(--accent-informational);
   vertical-align: middle;
 }
-.map-legend-circle { border-radius: 50%; }
-.map-legend-diamond { transform: rotate(45deg); }
+.map-legend-circle { border-radius: 50%; background: var(--accent-high); }
+.map-legend-diamond { transform: rotate(45deg); background: var(--accent-critical); }
 .map-legend-note { color: var(--text-muted); margin-left: auto; }
+
+/* Hover tooltip — matches the dashboard's own look, and repeats the
+   affected/actor colour+shape cue so it reads the same as the legend. */
+.map-tooltip { padding: 0.1rem 0; }
+.map-tooltip-title { font-weight: 500; color: var(--text-primary); }
+.map-tooltip-swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+.map-tooltip-affected { border-radius: 50%; background: var(--accent-high); }
+.map-tooltip-actor { transform: rotate(45deg); background: var(--accent-critical); }
+.map-tooltip-meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem; }
 
 .map-unmapped-note {
   margin: 0;
