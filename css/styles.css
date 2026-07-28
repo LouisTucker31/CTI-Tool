@@ -538,8 +538,8 @@ button:focus-visible, select:focus-visible, a:focus-visible {
   border-color: var(--border-hairline-strong) !important;
 }
 
-.map-popup-title { font-family: var(--font-display); font-size: 0.95rem; margin: 0 0 0.2rem; color: var(--text-primary); }
-.map-popup-meta { font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.5rem; }
+.map-popup .map-popup-title { font-family: var(--font-display); font-size: 0.95rem; margin: 0 0 0.15rem; color: var(--text-primary); }
+.map-popup .map-popup-meta { font-size: 0.75rem; color: var(--text-muted); margin: 0 0 0.5rem; }
 .map-popup-threat {
   font-size: 0.78rem;
   padding: 0.35rem 0;
@@ -547,4 +547,4 @@ button:focus-visible, select:focus-visible, a:focus-visible {
 }
 .map-popup-threat div { margin-top: 0.15rem; color: var(--text-secondary); }
 .map-popup-date { font-size: 0.7rem; color: var(--text-muted) !important; font-style: italic; }
-.map-popup-more { font-size: 0.72rem; color: var(--text-muted); margin: 0.3rem 0 0; }
+.map-popup .map-popup-more { font-size: 0.72rem; color: var(--text-muted); margin: 0.3rem 0 0; }
