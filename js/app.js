@@ -19,47 +19,8 @@
 
 import { dbGetAll, bulkWriteRecords } from './db.js';
 import { parseReport } from './parser.js';
-
-// ---------------------------------------------------------------------------
-// Small display helpers
-// ---------------------------------------------------------------------------
-
-const SEVERITY_KEY_BY_LABEL = {
-  Critical: 'critical',
-  High: 'high',
-  Moderate: 'moderate',
-  Low: 'low',
-  Informational: 'informational',
-};
-
-function severityChip({ severityLabel, confidenceLabel }) {
-  const key = SEVERITY_KEY_BY_LABEL[severityLabel] || 'informational';
-  const solid = confidenceLabel === 'Very High' ? ' confidence-solid' : '';
-  const title = `Confidence: ${confidenceLabel || 'Unknown'}`;
-  return `<span class="severity-chip severity-${key}${solid}" title="${title}">${severityLabel || 'Unrated'}</span>`;
-}
-
-function citeChip(citationIds) {
-  const count = (citationIds || []).length;
-  if (count === 0) return '';
-  return `<span class="cite-chip" title="${count} source${count === 1 ? '' : 's'} cited">[${count} source${count === 1 ? '' : 's'}]</span>`;
-}
-
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str ?? '';
-  return div.innerHTML;
-}
-
-/** DEFENCE_SUPPLY_CHAIN -> "Defence Supply Chain". Display-only — never touches stored data. */
-function humanize(token) {
-  if (!token) return token;
-  return token
-    .split('_')
-    .join(' ')
-    .toLowerCase()
-    .replace(/(^|[\s-])([a-z])/g, (match, sep, letter) => sep + letter.toUpperCase());
-}
+import { escapeHtml, humanize, severityChip, citeChip } from './helpers.js';
+import { renderWorldMap } from './widgets/map.js';
 
 // ---------------------------------------------------------------------------
 // Real widget: Key Findings
@@ -224,8 +185,8 @@ function placeholder(note) {
 
 const WIDGETS = [
   {
-    id: 'world-map', title: 'World Map', span: 'large-tall', status: 'planned',
-    render: placeholder('Will plot affected and threat-actor locations on an interactive map, sized by incident count, once the mapping widget is built (Leaflet).'),
+    id: 'world-map', title: 'World Map', span: 'large-tall', status: 'live',
+    render: renderWorldMap,
   },
   {
     id: 'threat-score', title: 'Global Threat Score', span: 'medium', status: 'planned',
