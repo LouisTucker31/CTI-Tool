@@ -235,7 +235,7 @@ export async function renderWorldMap(container) {
     minZoom: 2,
     maxBounds: worldBounds,
     maxBoundsViscosity: 1.0,
-  }).setView([20, 10], 2);
+  }).setView(COUNTRY_CENTROIDS.UNITED_KINGDOM, 2);
   map.attributionControl.setPrefix(false); // drop Leaflet's own self-link, keep only the required credits below
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
