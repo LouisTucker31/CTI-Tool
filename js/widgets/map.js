@@ -133,6 +133,8 @@ export function groupLocationsForMap(locations, threatRecords) {
         severityLabel: t.severityLabel,
         confidenceLabel: t.confidenceLabel,
         sourceCitationIds: t.sourceCitationIds,
+        lastObservedDate: t.lastObservedDate,
+        firstObservedDate: t.firstObservedDate,
       })),
     };
   }).filter((m) => m.count > 0);
@@ -172,12 +174,20 @@ function tooltipHtml(marker) {
 
 function popupHtml(marker) {
   const bucketLabel = marker.bucket === 'affected' ? 'Affected location' : 'Threat-actor location';
-  const threatsHtml = marker.threats.slice(0, 6).map((t) => `
+  const threatsHtml = marker.threats.slice(0, 6).map((t) => {
+    const dateLine = t.lastObservedDate
+      ? `Last observed ${t.lastObservedDate}`
+      : t.firstObservedDate
+        ? `First observed ${t.firstObservedDate}`
+        : null;
+    return `
     <div class="map-popup-threat">
       ${severityChip(t)} ${citeChip(t.sourceCitationIds)}
       <div>${escapeHtml(t.title)}</div>
+      ${dateLine ? `<div class="map-popup-date">${escapeHtml(dateLine)}</div>` : ''}
     </div>
-  `).join('');
+  `;
+  }).join('');
   const more = marker.threats.length > 6 ? `<p class="map-popup-more">+ ${marker.threats.length - 6} more</p>` : '';
 
   return `

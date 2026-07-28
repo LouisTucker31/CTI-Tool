@@ -291,17 +291,23 @@ body {
   border-radius: 3px;
   letter-spacing: 0.02em;
   display: inline-block;
+  color: var(--chip-color);
+  border: 1px solid var(--chip-color);
 }
 
-.severity-informational { color: var(--accent-informational); border: 1px solid var(--accent-informational); background: rgba(107, 122, 153, 0.1); }
-.severity-low { color: var(--accent-low); border: 1px solid var(--accent-low); background: rgba(59, 167, 160, 0.1); }
-.severity-moderate { color: var(--accent-moderate); border: 1px solid var(--accent-moderate); background: rgba(209, 161, 63, 0.1); }
-.severity-high { color: var(--accent-high); border: 1px solid var(--accent-high); background: rgba(204, 106, 46, 0.1); }
-.severity-critical { color: var(--accent-critical); border: 1px solid var(--accent-critical); background: rgba(209, 69, 61, 0.1); }
+.severity-informational { --chip-color: var(--accent-informational); background: rgba(107, 122, 153, 0.1); }
+.severity-low { --chip-color: var(--accent-low); background: rgba(59, 167, 160, 0.1); }
+.severity-moderate { --chip-color: var(--accent-moderate); background: rgba(209, 161, 63, 0.1); }
+.severity-high { --chip-color: var(--accent-high); background: rgba(204, 106, 46, 0.1); }
+.severity-critical { --chip-color: var(--accent-critical); background: rgba(209, 69, 61, 0.1); }
 
-/* Confidence: solid fill = Very High confidence. Outline-only = anything less. */
+/* Confidence: solid fill = Very High confidence. Outline-only = anything less.
+   Uses the --chip-color custom property directly rather than currentColor —
+   currentColor was resolving against this rule's own `color` value (which a
+   specificity tie made win first), so text and background ended up identical
+   and unreadable. Reading --chip-color instead sidesteps that entirely. */
 .severity-chip.confidence-solid {
-  background: currentColor;
+  background: var(--chip-color);
   color: var(--bg-panel);
   border-color: transparent;
 }
@@ -540,4 +546,5 @@ button:focus-visible, select:focus-visible, a:focus-visible {
   border-top: 1px solid var(--border-hairline);
 }
 .map-popup-threat div { margin-top: 0.15rem; color: var(--text-secondary); }
+.map-popup-date { font-size: 0.7rem; color: var(--text-muted) !important; font-style: italic; }
 .map-popup-more { font-size: 0.72rem; color: var(--text-muted); margin: 0.3rem 0 0; }
