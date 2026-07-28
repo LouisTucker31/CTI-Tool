@@ -405,3 +405,30 @@ button:focus-visible, select:focus-visible, a:focus-visible {
 .import-status.success { border-color: var(--accent-live); }
 .import-status.error { border-color: var(--accent-critical); }
 .import-status.error .import-status-title { color: var(--accent-critical); }
+
+/* ---------------------------------------------------------------------
+   Shared list patterns for widgets with a variable number of items —
+   keeps a tile's height predictable regardless of how much data is in it,
+   with the list scrolling internally instead of stretching the whole row.
+------------------------------------------------------------------------ */
+
+.tile-scroll-list {
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 0.3rem;
+}
+
+.widget-section-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 0.8rem 0 0.3rem;
+}
+.widget-section-label:first-child { margin-top: 0; }
+
+.tile-intro-note {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}

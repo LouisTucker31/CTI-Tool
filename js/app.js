@@ -125,6 +125,90 @@ async function renderRecentReports(container) {
 }
 
 // ---------------------------------------------------------------------------
+// Real widget: Emerging Threats
+// ---------------------------------------------------------------------------
+
+async function renderEmergingThreats(container) {
+  const [threatRecords, forecasts] = await Promise.all([
+    dbGetAll('threatRecords'),
+    dbGetAll('forecasts'),
+  ]);
+
+  const emergingThreats = threatRecords.filter((t) => t.trendDirection === 'EMERGING');
+  const now = new Date();
+  const upcomingForecasts = forecasts.filter((f) => !f.forecastExpiryDate || new Date(f.forecastExpiryDate) > now);
+
+  if (emergingThreats.length === 0 && upcomingForecasts.length === 0) {
+    container.innerHTML = '<p class="tile-placeholder-note">Nothing currently marked as emerging or upcoming.</p>';
+    return;
+  }
+
+  const threatsHtml = emergingThreats.map((t) => `
+    <div class="report-row">
+      <div class="report-row-title">${escapeHtml(t.threatTitle)}</div>
+      <div class="report-row-meta">${severityChip(t)} ${citeChip(t.sourceCitationIds)} &middot; ${escapeHtml(humanize(t.primarySector))}</div>
+    </div>
+  `).join('');
+
+  const forecastsHtml = upcomingForecasts.map((f) => `
+    <div class="report-row">
+      <div class="report-row-title">${escapeHtml(f.forecastTitle)}</div>
+      <div class="report-row-meta">Expires ${escapeHtml(f.forecastExpiryDate || 'Unknown')} &middot; Confidence: ${escapeHtml(f.confidenceLabel || 'Unknown')}</div>
+    </div>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="tile-scroll-list">
+      ${emergingThreats.length > 0 ? `<p class="widget-section-label">Emerging threats (${emergingThreats.length})</p>${threatsHtml}` : ''}
+      ${upcomingForecasts.length > 0 ? `<p class="widget-section-label">Upcoming forecasts (${upcomingForecasts.length})</p>${forecastsHtml}` : ''}
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// Real widget: Exercise Planning
+// ---------------------------------------------------------------------------
+
+const CONSIDERATION_TYPE_LABELS = {
+  SCENARIO_THEME: 'Scenario theme',
+  DECISION_POINT: 'Decision point',
+  COMMUNICATIONS_CHALLENGE: 'Communications challenge',
+  SUPPLY_CHAIN_CHALLENGE: 'Supply chain challenge',
+  REGULATORY_CHALLENGE: 'Regulatory challenge',
+};
+
+async function renderExercisePlanning(container) {
+  const considerations = await dbGetAll('exerciseConsiderations');
+
+  if (considerations.length === 0) {
+    container.innerHTML = '<p class="tile-placeholder-note">No exercise-planning considerations stored yet.</p>';
+    return;
+  }
+
+  const sorted = [...considerations].sort(
+    (a, b) => (b.exerciseRelevanceConfidenceScore || 0) - (a.exerciseRelevanceConfidenceScore || 0)
+  );
+
+  const categoryCount = new Set(considerations.map((c) => c.considerationType)).size;
+
+  const listHtml = sorted.map((item) => `
+    <div class="report-row">
+      <div class="report-row-title">${escapeHtml(item.title)}</div>
+      <div class="report-row-meta">
+        ${escapeHtml(CONSIDERATION_TYPE_LABELS[item.considerationType] || humanize(item.considerationType))}
+        &middot; Confidence: ${escapeHtml(item.exerciseRelevanceConfidenceLabel || 'Unknown')}
+        ${citeChip(item.sourceCitationIds)}
+      </div>
+    </div>
+  `).join('');
+
+  container.innerHTML = `
+    <p class="tile-intro-note">${considerations.length} consideration${considerations.length === 1 ? '' : 's'} across ${categoryCount} categor${categoryCount === 1 ? 'y' : 'ies'}</p>
+    <div class="tile-scroll-list">${listHtml}</div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
 // Placeholder widget factory
 // ---------------------------------------------------------------------------
 
@@ -172,12 +256,12 @@ const WIDGETS = [
     render: placeholder('A filterable view of everything currently tagged to a specific client.'),
   },
   {
-    id: 'emerging-threats', title: 'Emerging Threats', span: 'third', status: 'planned',
-    render: placeholder('Threats and forecasts currently marked as emerging or upcoming.'),
+    id: 'emerging-threats', title: 'Emerging Threats', span: 'third', status: 'live',
+    render: renderEmergingThreats,
   },
   {
-    id: 'exercise-planning', title: 'Exercise Planning', span: 'third', status: 'planned',
-    render: placeholder('Scenario themes, decision points and supporting evidence pulled from exercise considerations.'),
+    id: 'exercise-planning', title: 'Exercise Planning', span: 'third', status: 'live',
+    render: renderExercisePlanning,
   },
   {
     id: 'recent-reports', title: 'Recent Reports', span: 'third', status: 'live',
