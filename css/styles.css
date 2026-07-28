@@ -163,6 +163,7 @@ body {
 .span-half { grid-column: span 6; }
 .span-third { grid-column: span 4; }
 .span-full { grid-column: span 12; }
+.span-full-tall { grid-column: span 12; grid-row: span 2; }
 
 @media (max-width: 900px) {
   .widget-grid { grid-template-columns: 1fr; }
@@ -548,3 +549,68 @@ button:focus-visible, select:focus-visible, a:focus-visible {
 .map-popup-threat div { margin-top: 0.15rem; color: var(--text-secondary); }
 .map-popup-date { font-size: 0.7rem; color: var(--text-muted) !important; font-style: italic; }
 .map-popup .map-popup-more { font-size: 0.72rem; color: var(--text-muted); margin: 0.3rem 0 0; }
+
+/* ---------------------------------------------------------------------
+   Threat Timeline widget (vis-timeline)
+------------------------------------------------------------------------ */
+
+.tile-body-timeline {
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline-canvas {
+  flex: 1;
+  min-height: 280px;
+}
+
+.timeline-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--border-hairline);
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.timeline-legend-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 0.35rem;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+.timeline-legend-note { color: var(--text-muted); margin-left: auto; }
+
+/* vis-timeline ships light-mode chrome by default — same override pattern as
+   Leaflet. Class names below are vis-timeline's real ones, taken from its
+   own stylesheet, not guessed. */
+.vis-timeline { border: none; background: transparent; font-family: var(--font-body); color: var(--text-secondary); }
+.vis-panel.vis-center, .vis-panel.vis-left, .vis-panel.vis-right, .vis-panel.vis-top, .vis-panel.vis-bottom {
+  border-color: var(--border-hairline);
+}
+.vis-labelset .vis-label { border-color: var(--border-hairline); color: var(--text-secondary); background: transparent; }
+.vis-time-axis .vis-text { color: var(--text-muted); }
+.vis-time-axis .vis-grid.vis-minor { border-color: var(--border-hairline); }
+.vis-time-axis .vis-grid.vis-major { border-color: var(--border-hairline-strong); }
+.vis-current-time { background-color: var(--accent-critical); }
+
+.vis-item {
+  border-radius: 3px;
+  font-size: 0.75rem;
+}
+.vis-item .vis-item-content { padding: 2px 6px; }
+
+.timeline-severity-critical { background: rgba(209, 69, 61, 0.25); border-color: var(--accent-critical); color: var(--text-primary); }
+.timeline-severity-high { background: rgba(204, 106, 46, 0.25); border-color: var(--accent-high); color: var(--text-primary); }
+.timeline-severity-moderate { background: rgba(209, 161, 63, 0.25); border-color: var(--accent-moderate); color: var(--text-primary); }
+.timeline-severity-low { background: rgba(59, 167, 160, 0.25); border-color: var(--accent-low); color: var(--text-primary); }
+.timeline-severity-informational { background: rgba(107, 122, 153, 0.25); border-color: var(--accent-informational); color: var(--text-primary); }
+
+.timeline-incident { background: var(--bg-panel-raised); border-color: var(--text-secondary); }
+
+.timeline-forecast { background: transparent; border-style: dashed; border-color: var(--text-muted); color: var(--text-secondary); }

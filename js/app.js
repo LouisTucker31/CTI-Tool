@@ -21,6 +21,7 @@ import { dbGetAll, bulkWriteRecords } from './db.js';
 import { parseReport } from './parser.js';
 import { escapeHtml, humanize, severityChip, citeChip } from './helpers.js';
 import { renderWorldMap } from './widgets/map.js';
+import { renderThreatTimeline } from './widgets/timeline.js';
 
 // ---------------------------------------------------------------------------
 // Real widget: Key Findings
@@ -197,8 +198,8 @@ const WIDGETS = [
     render: renderKeyFindings,
   },
   {
-    id: 'timeline', title: 'Threat Timeline', span: 'full', status: 'planned',
-    render: placeholder('Will lay out incidents, campaigns and forecasts chronologically across every imported report.'),
+    id: 'timeline', title: 'Threat Timeline', span: 'full-tall', status: 'live',
+    render: renderThreatTimeline,
   },
   {
     id: 'activity-chart', title: 'Threat Activity', span: 'half', status: 'planned',
