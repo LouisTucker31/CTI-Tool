@@ -19,7 +19,7 @@
  */
 
 import { dbGetAll } from '../db.js';
-import { escapeHtml, severityChip, citeChip } from '../helpers.js';
+import { escapeHtml, severityChip, citeChip, formatDateUK } from '../helpers.js';
 
 const CATEGORY_LABELS = {
   threat: 'Threat Record',
@@ -54,7 +54,7 @@ export function buildVerticalTimelineEntries(threatRecords, incidents, forecasts
       id: t.threatId,
       category: 'threat',
       sortDate,
-      dateLabel: t.lastObservedDate ? `Last observed ${t.lastObservedDate}` : `First observed ${t.firstObservedDate}`,
+      dateLabel: t.lastObservedDate ? `Last observed ${formatDateUK(t.lastObservedDate)}` : `First observed ${formatDateUK(t.firstObservedDate)}`,
       title: t.threatTitle,
       severityLabel: t.severityLabel,
       confidenceLabel: t.confidenceLabel,
@@ -70,7 +70,7 @@ export function buildVerticalTimelineEntries(threatRecords, incidents, forecasts
       id: inc.incidentId,
       category: 'incident',
       sortDate,
-      dateLabel: `Incident date ${inc.incidentDate || inc.firstObservedDate}`,
+      dateLabel: `Incident date ${formatDateUK(inc.incidentDate || inc.firstObservedDate)}`,
       title: inc.incidentTitle,
       severityLabel: inc.severityLabel,
       confidenceLabel: inc.confidenceLabel,
@@ -86,7 +86,7 @@ export function buildVerticalTimelineEntries(threatRecords, incidents, forecasts
       id: f.forecastId,
       category: 'forecast',
       sortDate,
-      dateLabel: `Forecast — expires ${f.forecastExpiryDate || 'Unknown'}`,
+      dateLabel: `Forecast — expires ${formatDateUK(f.forecastExpiryDate)}`,
       title: f.forecastTitle,
       severityLabel: null,
       confidenceLabel: f.confidenceLabel,

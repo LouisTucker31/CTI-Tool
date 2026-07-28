@@ -26,7 +26,7 @@
  */
 
 import { dbGetAll } from '../db.js';
-import { escapeHtml, severityChip, citeChip, humanize } from '../helpers.js';
+import { escapeHtml, severityChip, citeChip, humanize, formatDateUK } from '../helpers.js';
 
 // ---------------------------------------------------------------------------
 // Country centroids (approximate — good enough for a country-level dot,
@@ -176,9 +176,9 @@ function popupHtml(marker) {
   const bucketLabel = marker.bucket === 'affected' ? 'Affected location' : 'Threat-actor location';
   const threatsHtml = marker.threats.slice(0, 6).map((t) => {
     const dateLine = t.lastObservedDate
-      ? `Last observed ${t.lastObservedDate}`
+      ? `Last observed ${formatDateUK(t.lastObservedDate)}`
       : t.firstObservedDate
-        ? `First observed ${t.firstObservedDate}`
+        ? `First observed ${formatDateUK(t.firstObservedDate)}`
         : null;
     return `
     <div class="map-popup-threat">

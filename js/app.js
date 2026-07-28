@@ -19,7 +19,7 @@
 
 import { dbGetAll, bulkWriteRecords } from './db.js';
 import { parseReport } from './parser.js';
-import { escapeHtml, humanize, severityChip, citeChip } from './helpers.js';
+import { escapeHtml, humanize, severityChip, citeChip, formatDateUK } from './helpers.js';
 import { renderWorldMap } from './widgets/map.js';
 import { renderThreatTimeline } from './widgets/timeline.js';
 
@@ -80,7 +80,7 @@ async function renderRecentReports(container) {
       <div class="report-row-title">${escapeHtml(report.reportTitle)}</div>
       <div class="report-row-meta">
         ${escapeHtml(humanize(report.primarySector))} &middot; ${escapeHtml(humanize(report.primaryLocation))}
-        &middot; period ending ${escapeHtml(report.reportingPeriodEnd || 'Unknown')}
+        &middot; period ending ${escapeHtml(formatDateUK(report.reportingPeriodEnd))}
       </div>
     </div>
   `).join('');
@@ -115,7 +115,7 @@ async function renderEmergingThreats(container) {
   const forecastsHtml = upcomingForecasts.map((f) => `
     <div class="report-row">
       <div class="report-row-title">${escapeHtml(f.forecastTitle)}</div>
-      <div class="report-row-meta">Expires ${escapeHtml(f.forecastExpiryDate || 'Unknown')} &middot; Confidence: ${escapeHtml(f.confidenceLabel || 'Unknown')}</div>
+      <div class="report-row-meta">Expires ${escapeHtml(formatDateUK(f.forecastExpiryDate))} &middot; Confidence: ${escapeHtml(f.confidenceLabel || 'Unknown')}</div>
     </div>
   `).join('');
 
@@ -198,7 +198,7 @@ const WIDGETS = [
     render: renderKeyFindings,
   },
   {
-    id: 'timeline', title: 'Threat Timeline', span: 'full-tall', status: 'live',
+    id: 'timeline', title: 'Threat Timeline', span: 'half-tall', status: 'live',
     render: renderThreatTimeline,
   },
   {
@@ -263,8 +263,13 @@ function buildTile(widget) {
 
 function wireTileControls(tile, grid, hiddenTray) {
   const body = tile.querySelector('.tile-body');
-  tile.querySelector('.tile-collapse').addEventListener('click', () => {
-    body.classList.toggle('collapsed');
+  const collapseBtn = tile.querySelector('.tile-collapse');
+  collapseBtn.addEventListener('click', () => {
+    const collapsing = !tile.classList.contains('tile-collapsed');
+    tile.classList.toggle('tile-collapsed', collapsing);
+    body.classList.toggle('collapsed', collapsing);
+    collapseBtn.textContent = collapsing ? '+' : '–';
+    collapseBtn.title = collapsing ? 'Expand' : 'Collapse';
   });
   tile.querySelector('.tile-close').addEventListener('click', () => {
     tile.remove();
