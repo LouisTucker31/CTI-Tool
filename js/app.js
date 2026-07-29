@@ -216,19 +216,19 @@ const WIDGETS = [
     render: placeholder('A technique matrix, highlighted by how often each technique shows up across stored threats.'),
   },
   {
+    id: 'emerging-threats', title: 'Emerging Threats', span: 'half', status: 'live',
+    render: renderEmergingThreats,
+  },
+  {
     id: 'client-relevance', title: 'Client Relevance', span: 'half', status: 'planned',
     render: placeholder('A filterable view of everything currently tagged to a specific client.'),
   },
   {
-    id: 'emerging-threats', title: 'Emerging Threats', span: 'third', status: 'live',
-    render: renderEmergingThreats,
-  },
-  {
-    id: 'exercise-planning', title: 'Exercise Planning', span: 'third', status: 'live',
+    id: 'exercise-planning', title: 'Exercise Planning', span: 'half', status: 'live',
     render: renderExercisePlanning,
   },
   {
-    id: 'recent-reports', title: 'Recent Reports', span: 'third', status: 'live',
+    id: 'recent-reports', title: 'Recent Reports', span: 'half', status: 'live',
     render: renderRecentReports,
   },
   {
