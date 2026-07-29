@@ -772,11 +772,18 @@ button:focus-visible, select:focus-visible, a:focus-visible {
   position: fixed;
   inset: 0;
   background: rgba(8, 10, 14, 0.7);
+  z-index: 1000;
+  padding: 2rem;
+}
+/* :not([hidden]) rather than a plain rule — otherwise this CSS and the
+   browser's own built-in "[hidden] { display: none }" rule tie on
+   specificity, and since ours loads later, ours would silently win,
+   making the modal visible at all times regardless of the hidden
+   attribute (exactly what happened before this fix). */
+.detail-modal-backdrop:not([hidden]) {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  padding: 2rem;
 }
 
 .detail-modal {
