@@ -29,6 +29,7 @@ import { filterState, getFilteredThreatRecords, getFilteredChildRecords, isAnyFi
 import { escapeHtml, humanize, severityChip, citeChip, formatDateUK, formatDateTimeUK } from './helpers.js';
 import { exportAllData, downloadJson, restoreFromBackup } from './backup.js';
 import { analyzeReportDeletion, deleteReport } from './report-deletion.js';
+import { extractTextFromFile } from './file-extraction.js';
 import { renderWorldMap } from './widgets/map.js';
 import { renderThreatTimeline } from './widgets/timeline.js';
 import { renderThreatActivity } from './widgets/charts.js';
@@ -428,10 +429,10 @@ async function handleImportFile(file) {
   const statusEl = document.getElementById('importStatus');
   statusEl.hidden = false;
   statusEl.className = 'import-status';
-  statusEl.innerHTML = '<p>Parsing&hellip;</p>';
+  statusEl.innerHTML = '<p>Reading file&hellip;</p>';
 
   try {
-    const text = await file.text();
+    const text = await extractTextFromFile(file);
     const { recordsByStore, warnings } = parseReport(text);
     const duplicates = await detectDuplicates(recordsByStore);
     const hasDuplicates = duplicates.vulnerabilityDuplicates.length > 0 || duplicates.malwareDuplicates.length > 0;
