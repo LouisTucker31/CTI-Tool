@@ -24,6 +24,7 @@ import { renderWorldMap } from './widgets/map.js';
 import { renderThreatTimeline } from './widgets/timeline.js';
 import { renderThreatActivity } from './widgets/charts.js';
 import { renderCategoryOverview } from './widgets/category-overview.js';
+import { renderMitreOverview } from './widgets/mitre-overview.js';
 
 // ---------------------------------------------------------------------------
 // Real widget: Key Findings
@@ -187,8 +188,8 @@ const WIDGETS = [
     render: renderCategoryOverview,
   },
   {
-    id: 'mitre-overview', title: 'MITRE ATT&CK Overview', span: 'half', status: 'planned',
-    render: placeholder('A technique matrix, highlighted by how often each technique shows up across stored threats.'),
+    id: 'mitre-overview', title: 'MITRE ATT&CK Overview', span: 'half', status: 'live',
+    render: renderMitreOverview,
   },
   {
     id: 'emerging-threats', title: 'Emerging Threats', span: 'half', status: 'live',
