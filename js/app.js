@@ -1,20 +1,25 @@
 /**
  * app.js — dashboard shell bootstrap.
  *
- * Renders every widget from a single registry (WIDGETS below) so adding a
- * real widget later is just: build js/widgets/whatever.js, import its
- * render function here, swap it into the registry entry, flip status to
- * 'live'. Nothing else about the shell needs to change.
+ * Renders every widget from a single registry (WIDGETS below). All 12
+ * widgets from the original concept are live.
  *
- * Two widgets are real right now (Key Findings, Recent Reports) — both
- * simple enough to read directly from db.js without needing their own
- * file yet. Once the bigger ones (map, timeline, charts, MITRE matrix)
- * get built, those get their own files under js/widgets/ per the original
- * plan — these two just didn't need it yet.
+ * Also handles: report import (with cross-report duplicate detection for
+ * CVEs/malware names, and a review step when duplicates are found), the
+ * filter bar (sector/client/severity/time — applied across every widget
+ * except Global Threat Score, Recent Reports and Recent Data Changes,
+ * which always reflect everything imported), the threat detail modal
+ * (click any threat title anywhere to see everything linked to it), the
+ * Settings panel (storage info, full backup export/restore, clear all
+ * data), and deleting a specific report (safely re-homing any
+ * vulnerability/malware record another report still depends on, rather
+ * than leaving it with a dangling reference).
  *
- * Deliberately NOT built yet (see chat for why): widget layout persistence
- * across reloads, and making the filter bar actually filter anything —
- * both need real widgets to exist first before they're worth wiring up.
+ * Deliberately NOT built yet: remembering widget layout (collapsed/closed
+ * state, positions) across reloads. Also, duplicate detection only covers
+ * CVEs and malware names — threat records, actors and locations aren't
+ * deduplicated across reports yet, since that needs fuzzy title/description
+ * matching rather than an exact key.
  */
 
 import { dbGetAll, bulkWriteRecords, addAuditLogEntry, resetDatabase, getStorageEstimate } from './db.js';
@@ -367,7 +372,10 @@ async function renderTileBody(tile, widget) {
 }
 
 // ---------------------------------------------------------------------------
-// Filter bar — options are real, filtering behaviour is not wired up yet
+// Filter bar — dropdown OPTIONS always reflect everything imported (so you
+// can switch to a sector/client that's currently filtered out). The actual
+// filtering behaviour lives in wireFilterBar() further down, and in
+// filters.js, which every widget's data-fetching goes through.
 // ---------------------------------------------------------------------------
 
 async function populateFilterOptions() {
