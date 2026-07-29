@@ -148,11 +148,21 @@ const STORE_NAMES = STORE_DEFINITIONS.map((def) => def.name);
 // ---------------------------------------------------------------------------
 
 let dbInstance = null;
+let dbOpenPromise = null;
 
 export function openDB() {
   if (dbInstance) return Promise.resolve(dbInstance);
+  // Multiple widgets can call openDB() nearly simultaneously (e.g. via
+  // Promise.all in a widget's render function) before the first indexedDB.open()
+  // call has resolved. Without memoizing the in-flight promise itself, each of
+  // those concurrent calls would independently open its own connection — only
+  // the last one ends up tracked in dbInstance, and the others stay open and
+  // untracked, which can later block deleteDatabase() (used by resetDatabase()
+  // and backup restore) with a "blocked" error since something still holds a
+  // live connection open.
+  if (dbOpenPromise) return dbOpenPromise;
 
-  return new Promise((resolve, reject) => {
+  dbOpenPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onupgradeneeded = (event) => {
@@ -171,13 +181,17 @@ export function openDB() {
 
     request.onsuccess = (event) => {
       dbInstance = event.target.result;
+      dbOpenPromise = null;
       resolve(dbInstance);
     };
 
     request.onerror = (event) => {
+      dbOpenPromise = null;
       reject(event.target.error);
     };
   });
+
+  return dbOpenPromise;
 }
 
 // ---------------------------------------------------------------------------
@@ -328,6 +342,7 @@ export function resetDatabase() {
       dbInstance.close();
       dbInstance = null;
     }
+    dbOpenPromise = null;
     const request = indexedDB.deleteDatabase(DB_NAME);
     request.onsuccess = () => resolve(true);
     request.onerror = (e) => reject(e.target.error);

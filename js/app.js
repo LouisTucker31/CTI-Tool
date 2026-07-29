@@ -17,11 +17,12 @@
  * both need real widgets to exist first before they're worth wiring up.
  */
 
-import { dbGetAll, bulkWriteRecords, addAuditLogEntry } from './db.js';
+import { dbGetAll, bulkWriteRecords, addAuditLogEntry, resetDatabase, getStorageEstimate } from './db.js';
 import { parseReport } from './parser.js';
 import { detectDuplicates, resolveDuplicates } from './duplicate-detection.js';
 import { filterState, getFilteredThreatRecords, getFilteredChildRecords, isAnyFilterActive } from './filters.js';
 import { escapeHtml, humanize, severityChip, citeChip, formatDateUK, formatDateTimeUK } from './helpers.js';
+import { exportAllData, downloadJson, restoreFromBackup } from './backup.js';
 import { renderWorldMap } from './widgets/map.js';
 import { renderThreatTimeline } from './widgets/timeline.js';
 import { renderThreatActivity } from './widgets/charts.js';
@@ -491,6 +492,79 @@ function wireFilterBar() {
   [sectorEl, clientEl, severityEl, timeEl].forEach((el) => el.addEventListener('change', onFilterChange));
 }
 
+// ---------------------------------------------------------------------------
+// Settings modal — storage info, backup export/restore, clear all data
+// ---------------------------------------------------------------------------
+
+async function refreshSettingsContent() {
+  const el = document.getElementById('storageUsageText');
+  const estimate = await getStorageEstimate();
+  if (estimate) {
+    const usageMB = (estimate.usageBytes / (1024 * 1024)).toFixed(2);
+    const quotaMB = (estimate.quotaBytes / (1024 * 1024)).toFixed(0);
+    el.textContent = `Using approximately ${usageMB} MB of an estimated ${quotaMB} MB available in this browser.`;
+  } else {
+    el.textContent = "Storage usage information isn't available in this browser.";
+  }
+}
+
+function wireSettingsModal() {
+  const settingsBtn = document.getElementById('settingsBtn');
+  const backdrop = document.getElementById('settingsModalBackdrop');
+  const closeBtn = document.getElementById('settingsModalClose');
+
+  function hide() { backdrop.hidden = true; }
+  async function show() {
+    backdrop.hidden = false;
+    await refreshSettingsContent();
+  }
+
+  settingsBtn.addEventListener('click', show);
+  closeBtn.addEventListener('click', hide);
+  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) hide(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !backdrop.hidden) hide(); });
+
+  document.getElementById('exportDataBtn').addEventListener('click', async () => {
+    const backup = await exportAllData();
+    const dateStr = new Date().toISOString().slice(0, 10);
+    downloadJson(backup, `cti-tool-backup-${dateStr}.json`);
+  });
+
+  const importInput = document.getElementById('importBackupInput');
+  document.getElementById('importBackupBtn').addEventListener('click', () => importInput.click());
+
+  importInput.addEventListener('change', async () => {
+    const file = importInput.files[0];
+    importInput.value = '';
+    if (!file) return;
+    if (!confirm('This will REPLACE everything currently stored with the contents of this backup file. Continue?')) return;
+
+    try {
+      const text = await file.text();
+      const backupObject = JSON.parse(text);
+      await restoreFromBackup(backupObject);
+      alert('Backup restored.');
+      await refreshLiveWidgets();
+      await populateFilterOptions();
+      await refreshSettingsContent();
+    } catch (err) {
+      alert(`Restore failed: ${err.message}`);
+    }
+  });
+
+  document.getElementById('clearAllDataBtn').addEventListener('click', async () => {
+    if (!confirm('This will permanently delete everything stored in this tool. This cannot be undone. Continue?')) return;
+    await resetDatabase();
+    await refreshLiveWidgets();
+    await populateFilterOptions();
+    await refreshSettingsContent();
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Boot
+// ---------------------------------------------------------------------------
+
 async function boot() {
   const grid = document.getElementById('widgetGrid');
   const hiddenTray = document.getElementById('hiddenTray');
@@ -498,6 +572,7 @@ async function boot() {
   wireImportControls();
   wireFilterBar();
   wireDetailModal();
+  wireSettingsModal();
 
   for (const widget of WIDGETS) {
     const tile = buildTile(widget);

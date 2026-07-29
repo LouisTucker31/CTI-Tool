@@ -22,7 +22,7 @@
   <div class="header-actions">
     <button class="btn" type="button" id="importBtn">Import report</button>
     <input type="file" id="importFileInput" accept=".txt" hidden>
-    <button class="btn" type="button" id="settingsBtn" aria-disabled="true" title="Not built yet">Settings</button>
+    <button class="btn" type="button" id="settingsBtn">Settings</button>
   </div>
 </header>
 
@@ -73,6 +73,33 @@
   <div class="detail-modal">
     <button type="button" class="detail-modal-close" id="detailModalClose" aria-label="Close">&times;</button>
     <div id="detailModalContent"></div>
+  </div>
+</div>
+
+<div class="settings-modal-backdrop" id="settingsModalBackdrop" hidden>
+  <div class="settings-modal">
+    <button type="button" class="detail-modal-close" id="settingsModalClose" aria-label="Close">&times;</button>
+    <p class="settings-title">Settings</p>
+
+    <div class="settings-section">
+      <p class="widget-section-label">Storage</p>
+      <p id="storageUsageText" class="tile-placeholder-note">Checking&hellip;</p>
+    </div>
+
+    <div class="settings-section">
+      <p class="widget-section-label">Backup</p>
+      <p class="settings-help-text">Everything in this tool is stored only in this browser. Export a backup regularly, especially before clearing browser data or switching machines.</p>
+      <div class="settings-actions">
+        <button type="button" class="btn" id="exportDataBtn">Export all data (.json)</button>
+        <button type="button" class="btn" id="importBackupBtn">Restore from backup</button>
+        <input type="file" id="importBackupInput" accept=".json" hidden>
+      </div>
+    </div>
+
+    <div class="settings-section settings-danger-zone">
+      <p class="widget-section-label">Danger zone</p>
+      <button type="button" class="btn danger" id="clearAllDataBtn">Clear all data</button>
+    </div>
   </div>
 </div>
 
