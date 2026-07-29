@@ -29,6 +29,7 @@ import { renderCategoryOverview } from './widgets/category-overview.js';
 import { renderMitreOverview } from './widgets/mitre-overview.js';
 import { renderClientRelevance } from './widgets/client-relevance.js';
 import { renderGlobalThreatScore } from './widgets/threat-score.js';
+import { wireDetailModal } from './threat-detail.js';
 
 // ---------------------------------------------------------------------------
 // Real widget: Key Findings
@@ -59,7 +60,7 @@ async function renderKeyFindings(container) {
       <span>Highest severity</span>
       <span>${severityChip(highestSeverity)} ${citeChip(highestSeverity.sourceCitationIds)}</span>
     </div>
-    <p class="tile-footnote">${escapeHtml(highestSeverity.threatTitle)}</p>
+    <p class="tile-footnote clickable-title" data-threat-id="${escapeHtml(highestSeverity.threatId)}">${escapeHtml(highestSeverity.threatTitle)}</p>
   `;
 }
 
@@ -134,7 +135,7 @@ async function renderEmergingThreats(container) {
 
   const threatsHtml = emergingThreats.map((t) => `
     <div class="report-row">
-      <div class="report-row-title">${escapeHtml(t.threatTitle)}</div>
+      <div class="report-row-title clickable-title" data-threat-id="${escapeHtml(t.threatId)}">${escapeHtml(t.threatTitle)}</div>
       <div class="report-row-meta">${severityChip(t)} ${citeChip(t.sourceCitationIds)} &middot; ${escapeHtml(humanize(t.primarySector))}</div>
     </div>
   `).join('');
@@ -170,7 +171,7 @@ async function renderExercisePlanning(container) {
 
   const listHtml = sorted.map((item) => `
     <div class="report-row">
-      <div class="report-row-title">${escapeHtml(item.title)}</div>
+      <div class="report-row-title clickable-title" data-threat-id="${escapeHtml(item.parentThreatId)}">${escapeHtml(item.title)}</div>
       <div class="report-row-meta">
         ${escapeHtml(CONSIDERATION_TYPE_LABELS[item.considerationType] || humanize(item.considerationType))}
         &middot; Confidence: ${escapeHtml(item.exerciseRelevanceConfidenceLabel || 'Unknown')}
@@ -496,6 +497,7 @@ async function boot() {
 
   wireImportControls();
   wireFilterBar();
+  wireDetailModal();
 
   for (const widget of WIDGETS) {
     const tile = buildTile(widget);

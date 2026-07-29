@@ -52,6 +52,7 @@ export function buildVerticalTimelineEntries(threatRecords, incidents) {
     if (!sortDate) continue;
     entries.push({
       id: t.threatId,
+      threatId: t.threatId,
       category: 'threat',
       sortDate,
       dateLabel: t.lastObservedDate ? `Last observed ${formatDateUK(t.lastObservedDate)}` : `First observed ${formatDateUK(t.firstObservedDate)}`,
@@ -68,6 +69,7 @@ export function buildVerticalTimelineEntries(threatRecords, incidents) {
     if (!sortDate) continue;
     entries.push({
       id: inc.incidentId,
+      threatId: inc.parentThreatId,
       category: 'incident',
       sortDate,
       dateLabel: `Incident date ${formatDateUK(inc.incidentDate || inc.firstObservedDate)}`,
@@ -93,7 +95,7 @@ function entryHtml(entry) {
       <div class="vtimeline-dot"></div>
       <div class="vtimeline-content">
         <div class="vtimeline-date">${escapeHtml(entry.dateLabel)}</div>
-        <div class="vtimeline-title">${escapeHtml(entry.title || 'Untitled')}</div>
+        <div class="vtimeline-title clickable-title" data-threat-id="${escapeHtml(entry.threatId)}">${escapeHtml(entry.title || 'Untitled')}</div>
         <div class="vtimeline-meta">
           <span class="vtimeline-category-tag">${CATEGORY_LABELS[entry.category]}</span>
           ${entry.severityLabel ? severityChip(entry) : ''}

@@ -48,7 +48,7 @@ export function filterByClient(threatRecords, exerciseConsiderations, client) {
 function threatRow(t) {
   return `
     <div class="report-row">
-      <div class="report-row-title">${escapeHtml(t.threatTitle)}</div>
+      <div class="report-row-title clickable-title" data-threat-id="${escapeHtml(t.threatId)}">${escapeHtml(t.threatTitle)}</div>
       <div class="report-row-meta">${severityChip(t)} ${citeChip(t.sourceCitationIds)} &middot; ${escapeHtml(humanize(t.primarySector))}</div>
     </div>
   `;
@@ -57,7 +57,7 @@ function threatRow(t) {
 function considerationRow(item) {
   return `
     <div class="report-row">
-      <div class="report-row-title">${escapeHtml(item.title)}</div>
+      <div class="report-row-title clickable-title" data-threat-id="${escapeHtml(item.parentThreatId)}">${escapeHtml(item.title)}</div>
       <div class="report-row-meta">
         ${escapeHtml(CONSIDERATION_TYPE_LABELS[item.considerationType] || humanize(item.considerationType))}
         &middot; Confidence: ${escapeHtml(item.exerciseRelevanceConfidenceLabel || 'Unknown')}

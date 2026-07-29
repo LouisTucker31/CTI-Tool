@@ -129,6 +129,7 @@ export function groupLocationsForMap(locations, threatRecords) {
       count: threats.length,
       severityLabel: highestSeverityThreat ? highestSeverityThreat.severityLabel : 'Informational',
       threats: threats.map((t) => ({
+        id: t.threatId,
         title: t.threatTitle,
         severityLabel: t.severityLabel,
         confidenceLabel: t.confidenceLabel,
@@ -183,7 +184,7 @@ function popupHtml(marker) {
     return `
     <div class="map-popup-threat">
       ${severityChip(t)} ${citeChip(t.sourceCitationIds)}
-      <div>${escapeHtml(t.title)}</div>
+      <div class="clickable-title" data-threat-id="${escapeHtml(t.id)}">${escapeHtml(t.title)}</div>
       ${dateLine ? `<div class="map-popup-date">${escapeHtml(dateLine)}</div>` : ''}
     </div>
   `;
