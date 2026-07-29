@@ -23,6 +23,7 @@ import { escapeHtml, humanize, severityChip, citeChip, formatDateUK } from './he
 import { renderWorldMap } from './widgets/map.js';
 import { renderThreatTimeline } from './widgets/timeline.js';
 import { renderThreatActivity } from './widgets/charts.js';
+import { renderCategoryOverview } from './widgets/category-overview.js';
 
 // ---------------------------------------------------------------------------
 // Real widget: Key Findings
@@ -207,8 +208,8 @@ const WIDGETS = [
     render: renderThreatActivity,
   },
   {
-    id: 'category-overview', title: 'Category Overview', span: 'half', status: 'planned',
-    render: placeholder('A tabbed view across actors, attack methods, sectors, vulnerabilities and more.'),
+    id: 'category-overview', title: 'Category Overview', span: 'half', status: 'live',
+    render: renderCategoryOverview,
   },
   {
     id: 'mitre-overview', title: 'MITRE ATT&CK Overview', span: 'half', status: 'planned',

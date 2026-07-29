@@ -659,3 +659,31 @@ button:focus-visible, select:focus-visible, a:focus-visible {
   position: absolute;
   inset: 0;
 }
+
+/* ---------------------------------------------------------------------
+   Tab bar — Category Overview widget (reusable for future tabbed widgets)
+------------------------------------------------------------------------ */
+
+.tab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.7rem;
+}
+
+.tab-btn {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  background: var(--bg-base);
+  border: 1px solid var(--border-hairline-strong);
+  color: var(--text-secondary);
+  padding: 0.35rem 0.7rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.tab-btn:hover { background: var(--bg-panel-raised); color: var(--text-primary); }
+.tab-btn.active {
+  background: var(--bg-panel-raised);
+  color: var(--text-primary);
+  border-color: var(--accent-low);
+}
