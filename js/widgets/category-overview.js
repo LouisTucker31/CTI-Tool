@@ -15,7 +15,7 @@
  * without a browser.
  */
 
-import { dbGetAll } from '../db.js';
+import { getFilteredThreatRecords, getFilteredChildRecords } from '../filters.js';
 import { escapeHtml, humanize, severityChip, citeChip } from '../helpers.js';
 
 const TABS = [
@@ -114,10 +114,10 @@ function malwareRow(item) {
 
 export async function renderCategoryOverview(container) {
   const [threatActors, threatRecords, vulnerabilities, malwareTools] = await Promise.all([
-    dbGetAll('threatActors'),
-    dbGetAll('threatRecords'),
-    dbGetAll('vulnerabilities'),
-    dbGetAll('malwareTools'),
+    getFilteredChildRecords('threatActors'),
+    getFilteredThreatRecords(),
+    getFilteredChildRecords('vulnerabilities'),
+    getFilteredChildRecords('malwareTools'),
   ]);
 
   const data = {

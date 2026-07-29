@@ -13,7 +13,7 @@
  * built for Category Overview — no new styling needed for this widget.
  */
 
-import { dbGetAll } from '../db.js';
+import { getFilteredChildRecords } from '../filters.js';
 import { escapeHtml, humanize, citeChip } from '../helpers.js';
 
 const TABS = [
@@ -100,7 +100,7 @@ function tacticRow(entry) {
 // ---------------------------------------------------------------------------
 
 export async function renderMitreOverview(container) {
-  const mitreMappings = await dbGetAll('mitreMappings');
+  const mitreMappings = await getFilteredChildRecords('mitreMappings');
 
   if (mitreMappings.length === 0) {
     container.innerHTML = '<p class="tile-placeholder-note">No MITRE ATT&amp;CK mappings stored yet.</p>';

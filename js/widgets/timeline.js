@@ -19,7 +19,7 @@
  * plain data-in/data-out and the part worth unit testing without a browser.
  */
 
-import { dbGetAll } from '../db.js';
+import { getFilteredThreatRecords, getFilteredChildRecords } from '../filters.js';
 import { escapeHtml, severityChip, citeChip, formatDateUK } from '../helpers.js';
 
 const CATEGORY_LABELS = {
@@ -106,8 +106,8 @@ function entryHtml(entry) {
 
 export async function renderThreatTimeline(container) {
   const [threatRecords, incidents] = await Promise.all([
-    dbGetAll('threatRecords'),
-    dbGetAll('incidents'),
+    getFilteredThreatRecords(),
+    getFilteredChildRecords('incidents'),
   ]);
 
   const entries = buildVerticalTimelineEntries(threatRecords, incidents);

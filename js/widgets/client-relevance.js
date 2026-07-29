@@ -12,7 +12,7 @@
  * too, same reasoning as everywhere else on this dashboard.
  */
 
-import { dbGetAll } from '../db.js';
+import { getFilteredThreatRecords, getFilteredChildRecords } from '../filters.js';
 import { escapeHtml, humanize, severityChip, citeChip } from '../helpers.js';
 
 const CONSIDERATION_TYPE_LABELS = {
@@ -69,14 +69,14 @@ function considerationRow(item) {
 
 export async function renderClientRelevance(container) {
   const [threatRecords, exerciseConsiderations] = await Promise.all([
-    dbGetAll('threatRecords'),
-    dbGetAll('exerciseConsiderations'),
+    getFilteredThreatRecords({ ignoreClient: true }),
+    getFilteredChildRecords('exerciseConsiderations', 'parentThreatId', { ignoreClient: true }),
   ]);
 
   const clients = getDistinctClients(threatRecords, exerciseConsiderations);
 
   if (clients.length === 0) {
-    container.innerHTML = '<p class="tile-placeholder-note">No client tags found in what\'s been imported yet.</p>';
+    container.innerHTML = '<p class="tile-placeholder-note">No client tags found matching the current filters.</p>';
     return;
   }
 

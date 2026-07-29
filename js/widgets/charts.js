@@ -20,7 +20,7 @@
  * other widget here: plain data-in/data-out, unit-testable without a browser.
  */
 
-import { dbGetAll } from '../db.js';
+import { getFilteredThreatRecords } from '../filters.js';
 import { humanize, SEVERITY_COLOR_VAR } from '../helpers.js';
 
 const SEVERITY_ORDER = ['Critical', 'High', 'Moderate', 'Low', 'Informational'];
@@ -59,7 +59,7 @@ function cssVar(name) {
 }
 
 export async function renderThreatActivity(container) {
-  const threatRecords = await dbGetAll('threatRecords');
+  const threatRecords = await getFilteredThreatRecords();
 
   if (threatRecords.length === 0) {
     container.innerHTML = '<p class="tile-placeholder-note">No threat records to chart yet.</p>';

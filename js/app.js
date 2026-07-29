@@ -20,6 +20,7 @@
 import { dbGetAll, bulkWriteRecords, addAuditLogEntry } from './db.js';
 import { parseReport } from './parser.js';
 import { detectDuplicates, resolveDuplicates } from './duplicate-detection.js';
+import { filterState, getFilteredThreatRecords, getFilteredChildRecords, isAnyFilterActive } from './filters.js';
 import { escapeHtml, humanize, severityChip, citeChip, formatDateUK, formatDateTimeUK } from './helpers.js';
 import { renderWorldMap } from './widgets/map.js';
 import { renderThreatTimeline } from './widgets/timeline.js';
@@ -35,12 +36,14 @@ import { renderGlobalThreatScore } from './widgets/threat-score.js';
 
 async function renderKeyFindings(container) {
   const [threatRecords, incidents] = await Promise.all([
-    dbGetAll('threatRecords'),
-    dbGetAll('incidents'),
+    getFilteredThreatRecords(),
+    getFilteredChildRecords('incidents'),
   ]);
 
   if (threatRecords.length === 0) {
-    container.innerHTML = '<p class="tile-placeholder-note">No reports imported yet. Use "Import report" above to load one.</p>';
+    container.innerHTML = isAnyFilterActive()
+      ? '<p class="tile-placeholder-note">Nothing matches the current filters.</p>'
+      : '<p class="tile-placeholder-note">No reports imported yet. Use "Import report" above to load one.</p>';
     return;
   }
 
@@ -121,7 +124,7 @@ async function renderRecentChanges(container) {
 // ---------------------------------------------------------------------------
 
 async function renderEmergingThreats(container) {
-  const threatRecords = await dbGetAll('threatRecords');
+  const threatRecords = await getFilteredThreatRecords();
   const emergingThreats = threatRecords.filter((t) => t.trendDirection === 'EMERGING');
 
   if (emergingThreats.length === 0) {
@@ -470,11 +473,29 @@ function wireImportControls() {
   });
 }
 
+function wireFilterBar() {
+  const sectorEl = document.getElementById('filterSector');
+  const clientEl = document.getElementById('filterClient');
+  const severityEl = document.getElementById('filterSeverity');
+  const timeEl = document.getElementById('filterTime');
+
+  async function onFilterChange() {
+    filterState.sector = sectorEl.value;
+    filterState.client = clientEl.value;
+    filterState.severity = severityEl.value;
+    filterState.time = timeEl.value;
+    await refreshLiveWidgets();
+  }
+
+  [sectorEl, clientEl, severityEl, timeEl].forEach((el) => el.addEventListener('change', onFilterChange));
+}
+
 async function boot() {
   const grid = document.getElementById('widgetGrid');
   const hiddenTray = document.getElementById('hiddenTray');
 
   wireImportControls();
+  wireFilterBar();
 
   for (const widget of WIDGETS) {
     const tile = buildTile(widget);

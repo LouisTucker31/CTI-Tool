@@ -25,7 +25,7 @@
  * be unit tested without needing a browser or a live map.
  */
 
-import { dbGetAll } from '../db.js';
+import { getFilteredThreatRecords, getFilteredChildRecords } from '../filters.js';
 import { escapeHtml, severityChip, citeChip, humanize, formatDateUK } from '../helpers.js';
 
 // ---------------------------------------------------------------------------
@@ -204,8 +204,8 @@ function popupHtml(marker) {
 
 export async function renderWorldMap(container) {
   const [locations, threatRecords] = await Promise.all([
-    dbGetAll('locations'),
-    dbGetAll('threatRecords'),
+    getFilteredChildRecords('locations'),
+    getFilteredThreatRecords(),
   ]);
 
   if (locations.length === 0) {
