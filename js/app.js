@@ -19,6 +19,7 @@
 
 import { dbGetAll, bulkWriteRecords, addAuditLogEntry } from './db.js';
 import { parseReport } from './parser.js';
+import { detectDuplicates, resolveDuplicates } from './duplicate-detection.js';
 import { escapeHtml, humanize, severityChip, citeChip, formatDateUK, formatDateTimeUK } from './helpers.js';
 import { renderWorldMap } from './widgets/map.js';
 import { renderThreatTimeline } from './widgets/timeline.js';
@@ -376,38 +377,86 @@ async function handleImportFile(file) {
   try {
     const text = await file.text();
     const { recordsByStore, warnings } = parseReport(text);
-    await bulkWriteRecords(recordsByStore);
+    const duplicates = await detectDuplicates(recordsByStore);
+    const hasDuplicates = duplicates.vulnerabilityDuplicates.length > 0 || duplicates.malwareDuplicates.length > 0;
 
-    const report = recordsByStore.reports?.[0];
-    if (report) {
-      await addAuditLogEntry({
-        action: 'IMPORT',
-        reportId: report.reportId,
-        reportTitle: report.reportTitle,
-        threatRecordCount: recordsByStore.threatRecords.length,
-        incidentCount: recordsByStore.incidents.length,
-      });
+    if (hasDuplicates) {
+      showDuplicateReview(recordsByStore, duplicates, warnings, file.name);
+      return;
     }
 
-    const counts = Object.entries(recordsByStore)
-      .map(([store, records]) => `${records.length} ${store}`)
-      .join(', ');
-
-    statusEl.classList.add('success');
-    statusEl.innerHTML = `
-      <p class="import-status-title">Imported "${escapeHtml(file.name)}"</p>
-      <p>${escapeHtml(counts)}</p>
-      ${warnings.length > 0
-        ? `<p>${warnings.length} warning(s):</p><ul>${warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join('')}</ul>`
-        : '<p>No warnings.</p>'}
-    `;
-
-    await refreshLiveWidgets();
-    await populateFilterOptions();
+    await finishImport(recordsByStore, warnings, file.name);
   } catch (err) {
     statusEl.classList.add('error');
     statusEl.innerHTML = `<p class="import-status-title">Import failed</p><p>${escapeHtml(err.message)}</p>`;
   }
+}
+
+function showDuplicateReview(recordsByStore, duplicates, warnings, fileName) {
+  const statusEl = document.getElementById('importStatus');
+  statusEl.classList.add('duplicate-review');
+
+  const vulnList = duplicates.vulnerabilityDuplicates
+    .map((d) => `<li>${escapeHtml(d.label)}</li>`).join('');
+  const malwareList = duplicates.malwareDuplicates
+    .map((d) => `<li>${escapeHtml(d.label)}</li>`).join('');
+
+  statusEl.innerHTML = `
+    <p class="import-status-title">Possible duplicates found in "${escapeHtml(fileName)}"</p>
+    ${duplicates.vulnerabilityDuplicates.length > 0
+      ? `<p>${duplicates.vulnerabilityDuplicates.length} vulnerabilit${duplicates.vulnerabilityDuplicates.length === 1 ? 'y' : 'ies'} already stored from a previous import:</p><ul>${vulnList}</ul>`
+      : ''}
+    ${duplicates.malwareDuplicates.length > 0
+      ? `<p>${duplicates.malwareDuplicates.length} malware/tool entr${duplicates.malwareDuplicates.length === 1 ? 'y' : 'ies'} already stored from a previous import:</p><ul>${malwareList}</ul>`
+      : ''}
+    <div class="import-review-actions">
+      <button type="button" class="btn" id="skipDuplicatesBtn">Skip duplicates, import the rest</button>
+      <button type="button" class="btn" id="importAnywayBtn">Import everything anyway</button>
+    </div>
+  `;
+
+  statusEl.querySelector('#skipDuplicatesBtn').addEventListener('click', async () => {
+    const resolved = resolveDuplicates(recordsByStore, duplicates, { skipVulnerabilities: true, skipMalware: true });
+    statusEl.classList.remove('duplicate-review');
+    await finishImport(resolved, warnings, fileName);
+  });
+
+  statusEl.querySelector('#importAnywayBtn').addEventListener('click', async () => {
+    statusEl.classList.remove('duplicate-review');
+    await finishImport(recordsByStore, warnings, fileName);
+  });
+}
+
+async function finishImport(recordsByStore, warnings, fileName) {
+  const statusEl = document.getElementById('importStatus');
+  await bulkWriteRecords(recordsByStore);
+
+  const report = recordsByStore.reports?.[0];
+  if (report) {
+    await addAuditLogEntry({
+      action: 'IMPORT',
+      reportId: report.reportId,
+      reportTitle: report.reportTitle,
+      threatRecordCount: recordsByStore.threatRecords.length,
+      incidentCount: recordsByStore.incidents.length,
+    });
+  }
+
+  const counts = Object.entries(recordsByStore)
+    .map(([store, records]) => `${records.length} ${store}`)
+    .join(', ');
+
+  statusEl.classList.add('success');
+  statusEl.innerHTML = `
+    <p class="import-status-title">Imported "${escapeHtml(fileName)}"</p>
+    <p>${escapeHtml(counts)}</p>
+    ${warnings.length > 0
+      ? `<p>${warnings.length} warning(s):</p><ul>${warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join('')}</ul>`
+      : '<p>No warnings.</p>'}
+  `;
+
+  await refreshLiveWidgets();
+  await populateFilterOptions();
 }
 
 function wireImportControls() {

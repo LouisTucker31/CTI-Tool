@@ -424,6 +424,14 @@ button:focus-visible, select:focus-visible, a:focus-visible {
 .import-status.error { border-color: var(--accent-critical); }
 .import-status.error .import-status-title { color: var(--accent-critical); }
 
+.import-status.duplicate-review { border-color: var(--accent-moderate); }
+.import-status.duplicate-review .import-status-title { color: var(--accent-moderate); }
+.import-review-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+
 /* ---------------------------------------------------------------------
    Shared list patterns for widgets with a variable number of items —
    keeps a tile's height predictable regardless of how much data is in it,
