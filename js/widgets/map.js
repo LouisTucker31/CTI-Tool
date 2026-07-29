@@ -140,6 +140,32 @@ export function groupLocationsForMap(locations, threatRecords) {
     };
   }).filter((m) => m.count > 0);
 
+  // For each marker, work out which OPPOSITE-bucket markers it connects to
+  // via a shared threat (actor <-> affected). Computed once here rather than
+  // at render/hover time, so the hover handler is just a lookup.
+  const markersByThreatId = new Map(); // threatId -> { affected: [marker...], actor: [marker...] }
+  for (const marker of markers) {
+    for (const threat of marker.threats) {
+      if (!markersByThreatId.has(threat.id)) {
+        markersByThreatId.set(threat.id, { affected: [], actor: [] });
+      }
+      markersByThreatId.get(threat.id)[marker.bucket].push(marker);
+    }
+  }
+
+  for (const marker of markers) {
+    const oppositeBucket = marker.bucket === 'affected' ? 'actor' : 'affected';
+    const seen = new Map(); // dedupe by lat/lng — several threats can share the same counterpart point
+    for (const threat of marker.threats) {
+      const opposites = markersByThreatId.get(threat.id)?.[oppositeBucket] || [];
+      for (const opp of opposites) {
+        const key = `${opp.lat.toFixed(2)},${opp.lng.toFixed(2)}`;
+        if (!seen.has(key)) seen.set(key, { lat: opp.lat, lng: opp.lng, place: opp.place });
+      }
+    }
+    marker.connections = [...seen.values()];
+  }
+
   return { markers, unmapped };
 }
 
@@ -222,7 +248,7 @@ export async function renderWorldMap(container) {
     <div class="map-legend">
       <span><span class="map-legend-swatch map-legend-circle"></span> Affected</span>
       <span><span class="map-legend-swatch map-legend-diamond"></span> Threat actor</span>
-      <span class="map-legend-note">Size = number of threats &middot; colour = highest severity there</span>
+      <span class="map-legend-note">Size = number of threats &middot; colour = highest severity there &middot; hover a marker to see its connections</span>
     </div>
     ${unmapped.length > 0
       ? `<p class="map-unmapped-note">${unmapped.length} location${unmapped.length === 1 ? '' : 's'} couldn't be placed on the map (no recognised country/coordinates).</p>`
@@ -246,6 +272,10 @@ export async function renderWorldMap(container) {
     noWrap: true,
   }).addTo(map);
 
+  function connectionLineColor() {
+    return getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim() || '#94a0b8';
+  }
+
   markers.forEach((marker) => {
     const color = markerTypeColor(marker.bucket);
     const radius = markerRadius(marker.count);
@@ -268,6 +298,21 @@ export async function renderWorldMap(container) {
       });
       layer = L.marker([marker.lat, marker.lng], { icon });
     }
+
+    // Connecting lines only appear on hover, tied to whichever marker is
+    // being pointed at — showing all of them permanently at once turns
+    // into visual noise fast once there's more than a handful of threats.
+    let connectionLines = [];
+    layer.on('mouseover', () => {
+      connectionLines = marker.connections.map((conn) => L.polyline(
+        [[marker.lat, marker.lng], [conn.lat, conn.lng]],
+        { color: connectionLineColor(), weight: 1.5, opacity: 0.8, dashArray: '4 4' }
+      ).addTo(map));
+    });
+    layer.on('mouseout', () => {
+      connectionLines.forEach((line) => map.removeLayer(line));
+      connectionLines = [];
+    });
 
     layer.bindTooltip(tooltipHtml(marker));
     layer.bindPopup(popupHtml(marker));
