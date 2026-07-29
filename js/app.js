@@ -30,21 +30,15 @@ import { renderCategoryOverview } from './widgets/category-overview.js';
 // ---------------------------------------------------------------------------
 
 async function renderKeyFindings(container) {
-  const [threatRecords, incidents, forecasts] = await Promise.all([
+  const [threatRecords, incidents] = await Promise.all([
     dbGetAll('threatRecords'),
     dbGetAll('incidents'),
-    dbGetAll('forecasts'),
   ]);
 
   if (threatRecords.length === 0) {
     container.innerHTML = '<p class="tile-placeholder-note">No reports imported yet. Use "Import report" above to load one.</p>';
     return;
   }
-
-  const now = new Date();
-  const activeForecasts = forecasts.filter(
-    (f) => !f.forecastExpiryDate || new Date(f.forecastExpiryDate) > now
-  );
 
   const highestSeverity = threatRecords.reduce((max, record) => {
     if (max === null) return record;
@@ -54,7 +48,6 @@ async function renderKeyFindings(container) {
   container.innerHTML = `
     <div class="stat-row"><span>Threat records tracked</span><strong>${threatRecords.length}</strong></div>
     <div class="stat-row"><span>Confirmed incidents</span><strong>${incidents.length}</strong></div>
-    <div class="stat-row"><span>Active forecasts</span><strong>${activeForecasts.length} of ${forecasts.length}</strong></div>
     <div class="stat-row highlight">
       <span>Highest severity</span>
       <span>${severityChip(highestSeverity)} ${citeChip(highestSeverity.sourceCitationIds)}</span>
@@ -93,17 +86,11 @@ async function renderRecentReports(container) {
 // ---------------------------------------------------------------------------
 
 async function renderEmergingThreats(container) {
-  const [threatRecords, forecasts] = await Promise.all([
-    dbGetAll('threatRecords'),
-    dbGetAll('forecasts'),
-  ]);
-
+  const threatRecords = await dbGetAll('threatRecords');
   const emergingThreats = threatRecords.filter((t) => t.trendDirection === 'EMERGING');
-  const now = new Date();
-  const upcomingForecasts = forecasts.filter((f) => !f.forecastExpiryDate || new Date(f.forecastExpiryDate) > now);
 
-  if (emergingThreats.length === 0 && upcomingForecasts.length === 0) {
-    container.innerHTML = '<p class="tile-placeholder-note">Nothing currently marked as emerging or upcoming.</p>';
+  if (emergingThreats.length === 0) {
+    container.innerHTML = '<p class="tile-placeholder-note">Nothing currently marked as an emerging trend.</p>';
     return;
   }
 
@@ -114,19 +101,7 @@ async function renderEmergingThreats(container) {
     </div>
   `).join('');
 
-  const forecastsHtml = upcomingForecasts.map((f) => `
-    <div class="report-row">
-      <div class="report-row-title">${escapeHtml(f.forecastTitle)}</div>
-      <div class="report-row-meta">Expires ${escapeHtml(formatDateUK(f.forecastExpiryDate))} &middot; Confidence: ${escapeHtml(f.confidenceLabel || 'Unknown')}</div>
-    </div>
-  `).join('');
-
-  container.innerHTML = `
-    <div class="tile-scroll-list">
-      ${emergingThreats.length > 0 ? `<p class="widget-section-label">Emerging threats (${emergingThreats.length})</p>${threatsHtml}` : ''}
-      ${upcomingForecasts.length > 0 ? `<p class="widget-section-label">Upcoming forecasts (${upcomingForecasts.length})</p>${forecastsHtml}` : ''}
-    </div>
-  `;
+  container.innerHTML = `<div class="tile-scroll-list">${threatsHtml}</div>`;
 }
 
 // ---------------------------------------------------------------------------

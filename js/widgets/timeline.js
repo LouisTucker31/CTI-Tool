@@ -8,10 +8,11 @@
  * avoids fighting a Gantt-style library's own default styling (which is
  * what the previous vis-timeline version kept running into).
  *
- * Threat records, incidents and forecasts are merged into one
- * chronological (newest-first) list rather than kept in separate rows —
- * the "Show" dropdown filters which categories are visible, replacing the
- * old zoom controls with something more deliberate.
+ * Threat records and incidents are merged into one chronological
+ * (newest-first) list rather than kept in separate rows — the "Show"
+ * dropdown filters which category is visible, replacing the old zoom
+ * controls with something more deliberate. Forecasts are deliberately left
+ * out here — this tool is about confirmed/actual activity, not predictions.
  *
  * The data-shaping logic (buildVerticalTimelineEntries) stays separate from
  * the DOM-building code, same reasoning as every other widget here: it's
@@ -24,7 +25,6 @@ import { escapeHtml, severityChip, citeChip, formatDateUK } from '../helpers.js'
 const CATEGORY_LABELS = {
   threat: 'Threat Record',
   incident: 'Incident',
-  forecast: 'Forecast',
 };
 
 /** YYYY / YYYY-MM / YYYY-MM-DD -> a full YYYY-MM-DD string for reliable sorting. */
@@ -40,10 +40,10 @@ function normalizeDate(dateStr) {
 // ---------------------------------------------------------------------------
 
 /**
- * Merges threat records, incidents and forecasts into one newest-first list.
+ * Merges threat records and incidents into one newest-first list.
  * @returns {Array<{id, category, sortDate, dateLabel, title, severityLabel, confidenceLabel, sourceCitationIds}>}
  */
-export function buildVerticalTimelineEntries(threatRecords, incidents, forecasts) {
+export function buildVerticalTimelineEntries(threatRecords, incidents) {
   const entries = [];
 
   for (const t of threatRecords) {
@@ -78,22 +78,6 @@ export function buildVerticalTimelineEntries(threatRecords, incidents, forecasts
     });
   }
 
-  for (const f of forecasts) {
-    const raw = f.forecastStartDate || f.forecastCreationDate;
-    const sortDate = normalizeDate(raw);
-    if (!sortDate) continue;
-    entries.push({
-      id: f.forecastId,
-      category: 'forecast',
-      sortDate,
-      dateLabel: `Forecast — expires ${formatDateUK(f.forecastExpiryDate)}`,
-      title: f.forecastTitle,
-      severityLabel: null,
-      confidenceLabel: f.confidenceLabel,
-      sourceCitationIds: f.sourceCitationIds,
-    });
-  }
-
   entries.sort((a, b) => (a.sortDate < b.sortDate ? 1 : a.sortDate > b.sortDate ? -1 : 0)); // newest first
 
   return entries;
@@ -121,23 +105,21 @@ function entryHtml(entry) {
 }
 
 export async function renderThreatTimeline(container) {
-  const [threatRecords, incidents, forecasts] = await Promise.all([
+  const [threatRecords, incidents] = await Promise.all([
     dbGetAll('threatRecords'),
     dbGetAll('incidents'),
-    dbGetAll('forecasts'),
   ]);
 
-  const entries = buildVerticalTimelineEntries(threatRecords, incidents, forecasts);
+  const entries = buildVerticalTimelineEntries(threatRecords, incidents);
 
   if (entries.length === 0) {
-    container.innerHTML = '<p class="tile-placeholder-note">No dated threats, incidents or forecasts to plot yet.</p>';
+    container.innerHTML = '<p class="tile-placeholder-note">No dated threats or incidents to plot yet.</p>';
     return;
   }
 
   const counts = {
     threat: entries.filter((e) => e.category === 'threat').length,
     incident: entries.filter((e) => e.category === 'incident').length,
-    forecast: entries.filter((e) => e.category === 'forecast').length,
   };
 
   container.classList.add('tile-body-vtimeline');
@@ -148,7 +130,6 @@ export async function renderThreatTimeline(container) {
         <option value="all">All (${entries.length})</option>
         <option value="threat">Threat Records (${counts.threat})</option>
         <option value="incident">Incidents (${counts.incident})</option>
-        <option value="forecast">Forecasts (${counts.forecast})</option>
       </select>
     </div>
     <div class="vtimeline-list" id="vtimelineList"></div>
