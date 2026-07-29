@@ -22,6 +22,7 @@ import { parseReport } from './parser.js';
 import { escapeHtml, humanize, severityChip, citeChip, formatDateUK } from './helpers.js';
 import { renderWorldMap } from './widgets/map.js';
 import { renderThreatTimeline } from './widgets/timeline.js';
+import { renderThreatActivity } from './widgets/charts.js';
 
 // ---------------------------------------------------------------------------
 // Real widget: Key Findings
@@ -202,8 +203,8 @@ const WIDGETS = [
     render: renderThreatTimeline,
   },
   {
-    id: 'activity-chart', title: 'Threat Activity', span: 'half', status: 'planned',
-    render: placeholder('Charts of threats and incidents over time, by sector, actor and attack technique.'),
+    id: 'activity-chart', title: 'Threat Activity', span: 'half-tall', status: 'live',
+    render: renderThreatActivity,
   },
   {
     id: 'category-overview', title: 'Category Overview', span: 'half', status: 'planned',
