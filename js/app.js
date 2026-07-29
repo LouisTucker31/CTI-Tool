@@ -17,9 +17,9 @@
  * both need real widgets to exist first before they're worth wiring up.
  */
 
-import { dbGetAll, bulkWriteRecords } from './db.js';
+import { dbGetAll, bulkWriteRecords, addAuditLogEntry } from './db.js';
 import { parseReport } from './parser.js';
-import { escapeHtml, humanize, severityChip, citeChip, formatDateUK } from './helpers.js';
+import { escapeHtml, humanize, severityChip, citeChip, formatDateUK, formatDateTimeUK } from './helpers.js';
 import { renderWorldMap } from './widgets/map.js';
 import { renderThreatTimeline } from './widgets/timeline.js';
 import { renderThreatActivity } from './widgets/charts.js';
@@ -81,6 +81,37 @@ async function renderRecentReports(container) {
       </div>
     </div>
   `).join('');
+}
+
+// ---------------------------------------------------------------------------
+// Real widget: Recent Data Changes
+// ---------------------------------------------------------------------------
+
+function auditEntryDescription(entry) {
+  if (entry.action === 'IMPORT') {
+    const threatPart = `${entry.threatRecordCount} threat record${entry.threatRecordCount === 1 ? '' : 's'}`;
+    const incidentPart = `${entry.incidentCount} incident${entry.incidentCount === 1 ? '' : 's'}`;
+    return `Imported "${entry.reportTitle}" — ${threatPart}, ${incidentPart}`;
+  }
+  return 'Unrecognised change';
+}
+
+async function renderRecentChanges(container) {
+  const auditLog = await dbGetAll('auditLog');
+
+  if (auditLog.length === 0) {
+    container.innerHTML = '<p class="tile-placeholder-note">No changes logged yet — this fills in as reports are imported.</p>';
+    return;
+  }
+
+  const sorted = [...auditLog].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  container.innerHTML = `<div class="tile-scroll-list">${sorted.map((entry) => `
+    <div class="report-row">
+      <div class="report-row-title">${escapeHtml(auditEntryDescription(entry))}</div>
+      <div class="report-row-meta">${escapeHtml(formatDateTimeUK(entry.timestamp))}</div>
+    </div>
+  `).join('')}</div>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -209,8 +240,8 @@ const WIDGETS = [
     render: renderRecentReports,
   },
   {
-    id: 'recent-changes', title: 'Recent Data Changes', span: 'full', status: 'planned',
-    render: placeholder('A log of imports, edits, merges and deletions, once the audit log is wired up.'),
+    id: 'recent-changes', title: 'Recent Data Changes', span: 'full', status: 'live',
+    render: renderRecentChanges,
   },
 ];
 
@@ -345,6 +376,17 @@ async function handleImportFile(file) {
     const text = await file.text();
     const { recordsByStore, warnings } = parseReport(text);
     await bulkWriteRecords(recordsByStore);
+
+    const report = recordsByStore.reports?.[0];
+    if (report) {
+      await addAuditLogEntry({
+        action: 'IMPORT',
+        reportId: report.reportId,
+        reportTitle: report.reportTitle,
+        threatRecordCount: recordsByStore.threatRecords.length,
+        incidentCount: recordsByStore.incidents.length,
+      });
+    }
 
     const counts = Object.entries(recordsByStore)
       .map(([store, records]) => `${records.length} ${store}`)

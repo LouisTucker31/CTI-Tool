@@ -69,3 +69,16 @@ export function formatDateUK(dateStr) {
   if (/^\d{4}$/.test(dateStr)) return dateStr;
   return dateStr; // unexpected shape — show as-is rather than mangle it
 }
+
+/** ISO datetime -> DD/MM/YYYY HH:MM, in the browser's local time. For audit-log entries, where the time matters as well as the date. */
+export function formatDateTimeUK(isoString) {
+  if (!isoString) return 'Unknown';
+  const d = new Date(isoString);
+  if (Number.isNaN(d.getTime())) return isoString;
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+}
