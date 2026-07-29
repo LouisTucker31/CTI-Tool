@@ -916,3 +916,30 @@ button:focus-visible, select:focus-visible, a:focus-visible {
 .btn.danger:hover {
   background: rgba(209, 69, 61, 0.12);
 }
+
+/* ---------------------------------------------------------------------
+   Recent Reports — per-row delete button
+------------------------------------------------------------------------ */
+
+.report-row-title-line {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.report-delete-btn {
+  font-size: 0.7rem;
+  background: none;
+  border: 1px solid var(--border-hairline-strong);
+  color: var(--text-muted);
+  padding: 0.2rem 0.55rem;
+  border-radius: 3px;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.report-delete-btn:hover {
+  border-color: var(--accent-critical);
+  color: var(--accent-critical);
+}

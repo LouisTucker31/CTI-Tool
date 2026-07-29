@@ -23,6 +23,7 @@ import { detectDuplicates, resolveDuplicates } from './duplicate-detection.js';
 import { filterState, getFilteredThreatRecords, getFilteredChildRecords, isAnyFilterActive } from './filters.js';
 import { escapeHtml, humanize, severityChip, citeChip, formatDateUK, formatDateTimeUK } from './helpers.js';
 import { exportAllData, downloadJson, restoreFromBackup } from './backup.js';
+import { analyzeReportDeletion, deleteReport } from './report-deletion.js';
 import { renderWorldMap } from './widgets/map.js';
 import { renderThreatTimeline } from './widgets/timeline.js';
 import { renderThreatActivity } from './widgets/charts.js';
@@ -81,13 +82,55 @@ async function renderRecentReports(container) {
 
   container.innerHTML = sorted.map((report) => `
     <div class="report-row">
-      <div class="report-row-title">${escapeHtml(report.reportTitle)}</div>
+      <div class="report-row-title-line">
+        <div class="report-row-title">${escapeHtml(report.reportTitle)}</div>
+        <button type="button" class="report-delete-btn" data-report-id="${escapeHtml(report.reportId)}" data-report-title="${escapeHtml(report.reportTitle)}">Delete</button>
+      </div>
       <div class="report-row-meta">
         ${escapeHtml(humanize(report.primarySector))} &middot; ${escapeHtml(humanize(report.primaryLocation))}
         &middot; period ending ${escapeHtml(formatDateUK(report.reportingPeriodEnd))}
       </div>
     </div>
   `).join('');
+
+  container.querySelectorAll('.report-delete-btn').forEach((btn) => {
+    btn.addEventListener('click', () => handleDeleteReportClick(btn.dataset.reportId, btn.dataset.reportTitle));
+  });
+}
+
+async function handleDeleteReportClick(reportId, reportTitle) {
+  const analysis = await analyzeReportDeletion(reportId);
+
+  const lines = [
+    `Delete "${reportTitle}"?`,
+    '',
+    'This will permanently remove:',
+    `- ${analysis.threatRecordCount} threat record(s)`,
+    `- ${analysis.childCounts.locations} location(s)`,
+    `- ${analysis.childCounts.incidents} incident(s)`,
+    `- ${analysis.childCounts.threatActors} threat actor(s)`,
+    `- ${analysis.vulnerabilitiesToDelete.length} vulnerabilit${analysis.vulnerabilitiesToDelete.length === 1 ? 'y' : 'ies'}`,
+    `- ${analysis.malwareToDelete.length} malware/tool entr${analysis.malwareToDelete.length === 1 ? 'y' : 'ies'}`,
+    `- ${analysis.childCounts.mitreMappings} MITRE mapping(s)`,
+    `- ${analysis.childCounts.exerciseConsiderations} exercise consideration(s)`,
+    `- ${analysis.citationCount} source citation(s)`,
+  ];
+
+  const rehomedCount = analysis.vulnerabilitiesToRehome.length + analysis.malwareToRehome.length;
+  if (rehomedCount > 0) {
+    lines.push(
+      '',
+      `${rehomedCount} vulnerability/malware record(s) will be KEPT, since other imported reports still reference them.`
+    );
+  }
+
+  lines.push('', 'This cannot be undone. Continue?');
+
+  if (!confirm(lines.join('\n'))) return;
+
+  await deleteReport(reportId);
+  await refreshLiveWidgets();
+  await populateFilterOptions();
 }
 
 // ---------------------------------------------------------------------------
