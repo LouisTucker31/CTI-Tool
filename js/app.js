@@ -26,6 +26,7 @@ import { renderThreatActivity } from './widgets/charts.js';
 import { renderCategoryOverview } from './widgets/category-overview.js';
 import { renderMitreOverview } from './widgets/mitre-overview.js';
 import { renderClientRelevance } from './widgets/client-relevance.js';
+import { renderGlobalThreatScore } from './widgets/threat-score.js';
 
 // ---------------------------------------------------------------------------
 // Real widget: Key Findings
@@ -200,8 +201,8 @@ const WIDGETS = [
     render: renderWorldMap,
   },
   {
-    id: 'threat-score', title: 'Global Threat Score', span: 'medium', status: 'planned',
-    render: placeholder('Will calculate one weighted score across the whole dataset — unaffected by dashboard filters — once the scoring rules are built.'),
+    id: 'threat-score', title: 'Global Threat Score', span: 'medium', status: 'live',
+    render: renderGlobalThreatScore,
   },
   {
     id: 'key-findings', title: 'Key Findings', span: 'medium', status: 'live',

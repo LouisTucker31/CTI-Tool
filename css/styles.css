@@ -714,3 +714,44 @@ button:focus-visible, select:focus-visible, a:focus-visible {
   border-radius: 4px;
   flex: 1;
 }
+
+/* ---------------------------------------------------------------------
+   Global Threat Score widget
+------------------------------------------------------------------------ */
+
+.score-display {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.4rem;
+}
+
+.score-number {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-weight: 600;
+  line-height: 1;
+  color: inherit;
+}
+
+.score-label {
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: inherit;
+}
+
+.score-band-low { color: var(--accent-low); }
+.score-band-guarded { color: var(--accent-informational); }
+.score-band-elevated { color: var(--accent-moderate); }
+.score-band-high { color: var(--accent-high); }
+.score-band-critical { color: var(--accent-critical); }
+
+.score-factors {
+  margin: 0.6rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+.score-factors li { margin-bottom: 0.25rem; }
