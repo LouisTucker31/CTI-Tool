@@ -687,3 +687,30 @@ button:focus-visible, select:focus-visible, a:focus-visible {
   color: var(--text-primary);
   border-color: var(--accent-low);
 }
+
+/* ---------------------------------------------------------------------
+   Generic widget select control (Client Relevance, and reusable elsewhere)
+------------------------------------------------------------------------ */
+
+.widget-select-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0 0.8rem;
+}
+.widget-select-control label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.widget-select-control select {
+  background: var(--bg-base);
+  border: 1px solid var(--border-hairline-strong);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
+  flex: 1;
+}

@@ -25,6 +25,7 @@ import { renderThreatTimeline } from './widgets/timeline.js';
 import { renderThreatActivity } from './widgets/charts.js';
 import { renderCategoryOverview } from './widgets/category-overview.js';
 import { renderMitreOverview } from './widgets/mitre-overview.js';
+import { renderClientRelevance } from './widgets/client-relevance.js';
 
 // ---------------------------------------------------------------------------
 // Real widget: Key Findings
@@ -196,8 +197,8 @@ const WIDGETS = [
     render: renderEmergingThreats,
   },
   {
-    id: 'client-relevance', title: 'Client Relevance', span: 'half', status: 'planned',
-    render: placeholder('A filterable view of everything currently tagged to a specific client.'),
+    id: 'client-relevance', title: 'Client Relevance', span: 'half', status: 'live',
+    render: renderClientRelevance,
   },
   {
     id: 'exercise-planning', title: 'Exercise Planning', span: 'half', status: 'live',
