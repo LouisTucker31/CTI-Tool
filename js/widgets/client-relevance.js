@@ -112,6 +112,7 @@ export async function renderClientRelevance(container) {
         ${clients.map((c) => `<option value="${escapeHtml(c.clientId)}">${escapeHtml(c.name)}</option>`).join('')}
       </select>
       <button type="button" class="btn" id="addClientBtn">Add client</button>
+      <button type="button" class="btn" id="editClientBtn">Edit</button>
       <button type="button" class="report-delete-btn" id="deleteClientBtn">Delete</button>
     </div>
     <div class="tile-scroll-list" id="clientRelevanceContent"></div>
@@ -121,6 +122,11 @@ export async function renderClientRelevance(container) {
   const pickerEl = container.querySelector('#clientPicker');
 
   container.querySelector('#addClientBtn').addEventListener('click', () => openAddClientModal());
+
+  container.querySelector('#editClientBtn').addEventListener('click', () => {
+    const client = clients.find((c) => c.clientId === pickerEl.value);
+    if (client) openAddClientModal(client);
+  });
 
   container.querySelector('#deleteClientBtn').addEventListener('click', async () => {
     const client = clients.find((c) => c.clientId === pickerEl.value);
@@ -171,9 +177,9 @@ export async function renderClientRelevance(container) {
   pickerEl.addEventListener('change', () => renderForClient(pickerEl.value));
 }
 
-function openAddClientModal() {
+function openAddClientModal(existingClient) {
   if (window.__openAddClientModal) {
-    window.__openAddClientModal();
+    window.__openAddClientModal(existingClient);
   } else {
     document.getElementById('addClientModalBackdrop').hidden = false;
   }

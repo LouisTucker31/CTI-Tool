@@ -549,14 +549,36 @@ function wireAddClientModal() {
   const closeBtn = document.getElementById('addClientModalClose');
   const cancelBtn = document.getElementById('cancelAddClientBtn');
   const formEl = document.getElementById('addClientForm');
+  const titleEl = document.getElementById('addClientModalTitle');
+
+  let editingClientId = null;
+  let editingClientDateAdded = null;
 
   function hide() {
     backdrop.hidden = true;
     formEl.reset();
+    editingClientId = null;
+    editingClientDateAdded = null;
   }
 
-  async function show() {
+  async function show(existingClient) {
     await populateClientFormDatalists();
+
+    if (existingClient) {
+      editingClientId = existingClient.clientId;
+      editingClientDateAdded = existingClient.dateAdded;
+      titleEl.textContent = 'Edit client';
+      document.getElementById('newClientName').value = existingClient.name || '';
+      document.getElementById('newClientSector').value = existingClient.sector ? humanize(existingClient.sector) : '';
+      document.getElementById('newClientLocation').value = existingClient.location ? humanize(existingClient.location) : '';
+      document.getElementById('newClientTechnologies').value = existingClient.technologies || '';
+      document.getElementById('newClientSuppliers').value = existingClient.suppliers || '';
+    } else {
+      editingClientId = null;
+      editingClientDateAdded = null;
+      titleEl.textContent = 'Add client';
+    }
+
     backdrop.hidden = false;
     document.getElementById('newClientName').focus();
   }
@@ -566,9 +588,10 @@ function wireAddClientModal() {
   backdrop.addEventListener('click', (e) => { if (e.target === backdrop) hide(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !backdrop.hidden) hide(); });
 
-  // Any widget can open this modal by just un-hiding it directly — expose
+  // Any widget can open this modal by just calling this directly — expose
   // a single global entry point so client-relevance.js doesn't need its
-  // own copy of the datalist-population logic.
+  // own copy of the datalist-population logic. Pass an existing client to
+  // edit it instead of creating a new one.
   window.__openAddClientModal = show;
 
   formEl.addEventListener('submit', async (e) => {
@@ -578,13 +601,13 @@ function wireAddClientModal() {
 
     const normalize = (v) => v.trim().toUpperCase().replace(/[\s-]+/g, '_');
     await dbPut('clients', {
-      clientId: `CLIENT-${Date.now()}`,
+      clientId: editingClientId || `CLIENT-${Date.now()}`,
       name,
       sector: document.getElementById('newClientSector').value.trim() ? normalize(document.getElementById('newClientSector').value) : null,
       location: document.getElementById('newClientLocation').value.trim() ? normalize(document.getElementById('newClientLocation').value) : null,
       technologies: document.getElementById('newClientTechnologies').value.trim() || null,
       suppliers: document.getElementById('newClientSuppliers').value.trim() || null,
-      dateAdded: new Date().toISOString(),
+      dateAdded: editingClientDateAdded || new Date().toISOString(),
     });
 
     hide();
