@@ -43,6 +43,7 @@ export function buildSectorDistribution(threatRecords) {
   const counts = new Map();
   for (const t of threatRecords) {
     const sector = t.primarySector || 'Unknown';
+    if (sector === 'ALL') continue; // a meta-value meaning "every sector", not a real sector of its own
     counts.set(sector, (counts.get(sector) || 0) + 1);
   }
   return [...counts.entries()]

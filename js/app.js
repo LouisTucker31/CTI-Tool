@@ -174,6 +174,10 @@ const WIDGETS = [
     render: renderGlobalThreatScore,
   },
   {
+    id: 'recent-reports', title: 'Recent Reports', span: 'medium', status: 'live',
+    render: renderRecentReports,
+  },
+  {
     id: 'timeline', title: 'Threat Timeline', span: 'half-tall', status: 'live',
     render: renderThreatTimeline,
   },
@@ -196,10 +200,6 @@ const WIDGETS = [
   {
     id: 'exercise-planning', title: 'Exercise Planning', span: 'half', status: 'live',
     render: renderExercisePlanning,
-  },
-  {
-    id: 'recent-reports', title: 'Recent Reports', span: 'half', status: 'live',
-    render: renderRecentReports,
   },
 ];
 
