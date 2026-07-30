@@ -1,13 +1,14 @@
 /**
- * file-extraction.js — turns an uploaded file (.txt, .pdf, .docx) into
- * plain text, ready to hand straight to parseReport().
+ * file-extraction.js — turns an uploaded file (.txt, .pdf, .docx, .xlsx)
+ * into plain text, ready to hand straight to parseReport().
  *
  * PDF.js ships proper ES modules, so it's imported directly from its CDN
  * right here (dynamically, only when a PDF is actually chosen — no point
  * fetching a few hundred KB of library on every page load if someone's
- * only ever importing .txt files). Mammoth only ships a classic browser
- * build, so it's loaded via a <script> tag in index.html instead, same
- * pattern as Leaflet/Chart.js, and used here as the `mammoth` global.
+ * only ever importing .txt files). Mammoth and SheetJS only ship classic
+ * browser builds, so they're loaded via <script> tags in index.html
+ * instead, same pattern as Leaflet/Chart.js, and used here as the
+ * `mammoth` and `XLSX` globals.
  *
  * PDF text reconstruction is the one subtle part: PDF.js's getTextContent()
  * returns individual positioned text fragments, not lines — naively
@@ -19,6 +20,13 @@
  * verified against a real generated PDF (not just read about) before
  * writing this — the naive space-joined version silently produced text
  * the parser couldn't read at all.
+ *
+ * XLSX has a similar trap: SheetJS's own sheet_to_txt utility actually
+ * outputs UTF-16-formatted text (with a null byte woven between every
+ * character) — meant for saving as a real .txt file, not for use as a
+ * plain JS string. Reading cells directly via sheet_to_json instead and
+ * joining them ourselves avoids that entirely. Also verified against a
+ * real generated XLSX file before writing this.
  */
 
 const PDFJS_VERSION = '5.4.149';
@@ -69,10 +77,24 @@ async function extractTextFromDocx(file) {
   return result.value;
 }
 
+async function extractTextFromXlsx(file) {
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: 'array' });
+
+  const sheetTexts = workbook.SheetNames.map((name) => {
+    const sheet = workbook.Sheets[name];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    return rows.map((row) => (row || []).join(' ')).join('\n');
+  });
+
+  return sheetTexts.join('\n');
+}
+
 export async function extractTextFromFile(file) {
   const name = (file.name || '').toLowerCase();
   if (name.endsWith('.pdf')) return extractTextFromPdf(file);
   if (name.endsWith('.docx')) return extractTextFromDocx(file);
+  if (name.endsWith('.xlsx') || name.endsWith('.xls')) return extractTextFromXlsx(file);
   if (name.endsWith('.txt')) return file.text();
-  throw new Error(`Unsupported file type for "${file.name}". Please upload a .txt, .pdf, or .docx file.`);
+  throw new Error(`Unsupported file type for "${file.name}". Please upload a .txt, .pdf, .docx, or .xlsx file.`);
 }
