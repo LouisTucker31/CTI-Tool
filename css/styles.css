@@ -995,3 +995,33 @@ button:focus-visible, select:focus-visible, a:focus-visible {
 *::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* ---------------------------------------------------------------------
+   Client Relevance — add-client form
+------------------------------------------------------------------------ */
+
+.add-client-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.8rem;
+  margin-bottom: 0.8rem;
+  background: var(--bg-base);
+  border: 1px solid var(--border-hairline-strong);
+  border-radius: var(--radius);
+}
+
+.add-client-form input {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-hairline-strong);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+}
+
+.add-client-form-actions {
+  display: flex;
+  gap: 0.5rem;
+}

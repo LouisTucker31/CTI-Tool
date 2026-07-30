@@ -127,7 +127,7 @@ const STORE_DEFINITIONS = [
   },
   {
     name: 'clients',
-    keyPath: 'clientName',
+    keyPath: 'clientId',
     indexes: [],
   },
   {
