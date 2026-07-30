@@ -25,7 +25,7 @@
 
 import { dbGetAll, bulkWriteRecords, addAuditLogEntry, resetDatabase, getStorageEstimate } from './db.js';
 import { parseReport } from './parser.js';
-import { detectDuplicates, resolveDuplicates } from './duplicate-detection.js';
+import { detectDuplicates, resolveDuplicates, detectPossibleMatches } from './duplicate-detection.js';
 import { filterState } from './filters.js';
 import { escapeHtml, humanize, citeChip, formatDateUK } from './helpers.js';
 import { exportAllData, downloadJson, restoreFromBackup } from './backup.js';
@@ -337,21 +337,22 @@ async function handleImportFile(file) {
     const text = await extractTextFromFile(file);
     const { recordsByStore, warnings } = parseReport(text);
     const duplicates = await detectDuplicates(recordsByStore);
+    const possibleMatches = await detectPossibleMatches(recordsByStore);
     const hasDuplicates = duplicates.vulnerabilityDuplicates.length > 0 || duplicates.malwareDuplicates.length > 0;
 
     if (hasDuplicates) {
-      showDuplicateReview(recordsByStore, duplicates, warnings, file.name);
+      showDuplicateReview(recordsByStore, duplicates, warnings, file.name, possibleMatches);
       return;
     }
 
-    await finishImport(recordsByStore, warnings, file.name);
+    await finishImport(recordsByStore, warnings, file.name, possibleMatches);
   } catch (err) {
     statusEl.classList.add('error');
     statusEl.innerHTML = `<p class="import-status-title">Import failed</p><p>${escapeHtml(err.message)}</p>`;
   }
 }
 
-function showDuplicateReview(recordsByStore, duplicates, warnings, fileName) {
+function showDuplicateReview(recordsByStore, duplicates, warnings, fileName, possibleMatches) {
   const statusEl = document.getElementById('importStatus');
   statusEl.classList.add('duplicate-review');
 
@@ -377,16 +378,16 @@ function showDuplicateReview(recordsByStore, duplicates, warnings, fileName) {
   statusEl.querySelector('#skipDuplicatesBtn').addEventListener('click', async () => {
     const resolved = resolveDuplicates(recordsByStore, duplicates, { skipVulnerabilities: true, skipMalware: true });
     statusEl.classList.remove('duplicate-review');
-    await finishImport(resolved, warnings, fileName);
+    await finishImport(resolved, warnings, fileName, possibleMatches);
   });
 
   statusEl.querySelector('#importAnywayBtn').addEventListener('click', async () => {
     statusEl.classList.remove('duplicate-review');
-    await finishImport(recordsByStore, warnings, fileName);
+    await finishImport(recordsByStore, warnings, fileName, possibleMatches);
   });
 }
 
-async function finishImport(recordsByStore, warnings, fileName) {
+async function finishImport(recordsByStore, warnings, fileName, possibleMatches = { similarThreats: [], similarActors: [] }) {
   const statusEl = document.getElementById('importStatus');
   await bulkWriteRecords(recordsByStore);
 
@@ -405,6 +406,15 @@ async function finishImport(recordsByStore, warnings, fileName) {
     .map(([store, records]) => `${records.length} ${store}`)
     .join(', ');
 
+  const matchNotes = [
+    ...possibleMatches.similarThreats.map((m) =>
+      `"${m.newTitle}" looks similar (${m.similarityPercent}%) to an existing threat: "${m.existingTitle}"`
+    ),
+    ...possibleMatches.similarActors.map((m) =>
+      `Actor "${m.newName}" may be the same as the existing actor "${m.existingName}"`
+    ),
+  ];
+
   statusEl.classList.add('success');
   statusEl.innerHTML = `
     <p class="import-status-title">Imported "${escapeHtml(fileName)}"</p>
@@ -412,6 +422,9 @@ async function finishImport(recordsByStore, warnings, fileName) {
     ${warnings.length > 0
       ? `<p>${warnings.length} warning(s):</p><ul>${warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join('')}</ul>`
       : '<p>No warnings.</p>'}
+    ${matchNotes.length > 0
+      ? `<p class="import-possible-matches-title">Possible matches with existing data — not merged automatically, review and delete manually if these are the same:</p><ul>${matchNotes.map((n) => `<li>${escapeHtml(n)}</li>`).join('')}</ul>`
+      : ''}
   `;
 
   await refreshLiveWidgets();

@@ -1,29 +1,127 @@
 /**
  * duplicate-detection.js — cross-report duplicate detection for import.
  *
- * v1 scope, deliberately: only Vulnerabilities (matched by CVE ID) and
- * Malware/Tools (matched by name, case-insensitive). These are the two
- * entity types with a genuinely reliable natural key — a CVE ID either is
- * or isn't the same vulnerability, no fuzzy judgement required. Threat
- * records would need title/description similarity matching to detect
- * duplicates, which is a much harder problem deserving its own design
- * pass rather than being bolted on here.
+ * Two different tiers, because they need genuinely different treatment:
+ *
+ * EXACT-MATCH (Vulnerabilities by CVE ID, Malware by name) — reliable
+ * enough to safely auto-resolve. If the person chooses to skip one,
+ * any reference to it elsewhere in the new report (e.g. a threat record's
+ * vulnerabilityIds) is rewritten to point at the *existing* stored record
+ * instead — otherwise skipping would leave a dangling reference to
+ * something never written to storage.
+ *
+ * INFORMATIONAL-ONLY (Threat records by title similarity, Threat actors by
+ * name/alias overlap) — flagged for the person's awareness during import,
+ * never auto-resolved. Threat record titles have no exact key at all, so
+ * any match is a guess. Threat actors have a fairly reliable match, but
+ * unlike vulnerabilities/malware there's no array field letting multiple
+ * reports reference one shared actor record — skipping one the same way
+ * would silently leave some other threat's actor list incomplete rather
+ * than cleanly deduplicated. See the section below for the full reasoning.
  *
  * Per the schema doc's own principles: duplicates are never imported or
  * merged automatically — this module only detects and reports them; the
  * decision of what to do about it belongs to the user, in app.js.
- *
- * If the user chooses to skip a duplicate, any reference to it elsewhere
- * in the new report (e.g. a threat record's vulnerabilityIds) is rewritten
- * to point at the *existing* stored record instead — otherwise skipping
- * the duplicate would leave a dangling reference to something that was
- * never written to storage.
  */
 
 import { dbGetAll } from './db.js';
 
 // ---------------------------------------------------------------------------
-// Detection — pure except for reading current storage state
+// Informational-only similarity detection — threat records and actors
+// ---------------------------------------------------------------------------
+//
+// Unlike vulnerabilities/malware above, these two have no safe way to
+// auto-resolve a match:
+//   - Threat records have no exact key at all — only a title/description
+//     to compare, which is inherently a guess, never a certainty.
+//   - Threat actors DO have a fairly reliable match (name/alias overlap),
+//     but unlike vulnerabilities/malware there's no array field on
+//     ThreatRecord for multiple reports to reference one shared actor —
+//     an actor belongs to exactly one threat record. Skipping a "duplicate"
+//     actor the way vulnerabilities are skipped would silently make some
+//     other threat's actor list incomplete, not cleanly deduplicated.
+//
+// So both are surfaced as a plain heads-up during import — never acted on
+// automatically. If the person agrees something's genuinely duplicated,
+// the fix is to review and delete the redundant report manually.
+
+const TITLE_SIMILARITY_THRESHOLD = 0.35; // calibrated against real report titles — see chat
+const STOPWORDS = new Set(['a', 'an', 'the', 'of', 'in', 'on', 'and', 'or', 'to', 'for', 'with', 'against', 'via', 'using', 'by']);
+
+function tokenizeTitle(title) {
+  return new Set(
+    (title || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length > 2 && !STOPWORDS.has(w))
+  );
+}
+
+function jaccardSimilarity(setA, setB) {
+  if (setA.size === 0 || setB.size === 0) return 0;
+  let intersection = 0;
+  for (const item of setA) if (setB.has(item)) intersection++;
+  return intersection / (setA.size + setB.size - intersection);
+}
+
+function actorNamePool(actor) {
+  const names = [actor.actorName, ...(actor.aliases || [])];
+  return new Set(names.filter(Boolean).map((n) => n.toUpperCase()));
+}
+
+/**
+ * @returns {{ similarThreats: Array<{newTitle, existingTitle, existingThreatId, similarityPercent}>,
+ *             similarActors: Array<{newName, existingName, existingThreatId}> }}
+ */
+export async function detectPossibleMatches(recordsByStore) {
+  const [existingThreatRecords, existingActors] = await Promise.all([
+    dbGetAll('threatRecords'),
+    dbGetAll('threatActors'),
+  ]);
+
+  const similarThreats = [];
+  for (const newThreat of recordsByStore.threatRecords || []) {
+    const newTokens = tokenizeTitle(newThreat.threatTitle);
+    let best = null;
+    for (const existing of existingThreatRecords) {
+      const score = jaccardSimilarity(newTokens, tokenizeTitle(existing.threatTitle));
+      if (score >= TITLE_SIMILARITY_THRESHOLD && (!best || score > best.score)) {
+        best = { existingThreat: existing, score };
+      }
+    }
+    if (best) {
+      similarThreats.push({
+        newTitle: newThreat.threatTitle,
+        existingTitle: best.existingThreat.threatTitle,
+        existingThreatId: best.existingThreat.threatId,
+        similarityPercent: Math.round(best.score * 100),
+      });
+    }
+  }
+
+  const similarActors = [];
+  for (const newActor of recordsByStore.threatActors || []) {
+    const newPool = actorNamePool(newActor);
+    const existingMatch = existingActors.find((existing) => {
+      const existingPool = actorNamePool(existing);
+      for (const name of newPool) if (existingPool.has(name)) return true;
+      return false;
+    });
+    if (existingMatch) {
+      similarActors.push({
+        newName: newActor.actorName,
+        existingName: existingMatch.actorName,
+        existingThreatId: existingMatch.parentThreatId,
+      });
+    }
+  }
+
+  return { similarThreats, similarActors };
+}
+
+// ---------------------------------------------------------------------------
+// Exact-match detection (CVE ID / malware name) — safe to auto-resolve
 // ---------------------------------------------------------------------------
 
 /**

@@ -424,6 +424,12 @@ button:focus-visible, select:focus-visible, a:focus-visible {
 .import-status.error { border-color: var(--accent-critical); }
 .import-status.error .import-status-title { color: var(--accent-critical); }
 
+.import-possible-matches-title {
+  color: var(--accent-moderate);
+  font-weight: 600;
+  margin-top: 0.7rem;
+}
+
 .import-status.duplicate-review { border-color: var(--accent-moderate); }
 .import-status.duplicate-review .import-status-title { color: var(--accent-moderate); }
 .import-review-actions {
