@@ -20,7 +20,7 @@
 // ---------------------------------------------------------------------------
 
 const DB_NAME = 'cti-visualisation-tool';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // v2: 'clients' store's keyPath fixed from 'clientName' to 'clientId'
 
 const STORE_DEFINITIONS = [
   {
@@ -167,6 +167,18 @@ export function openDB() {
 
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
+
+      // v2: the 'clients' store's keyPath changed from 'clientName' to
+      // 'clientId'. A keyPath can't be changed on an existing store — it
+      // has to be deleted and recreated. Without this, anyone who already
+      // has a database (i.e. everyone who's used the tool before this
+      // change) keeps the old store shape forever, and every new client
+      // record silently fails to save because it has no 'clientName'
+      // property for IndexedDB to key on.
+      if (event.oldVersion < 2 && db.objectStoreNames.contains('clients')) {
+        db.deleteObjectStore('clients');
+      }
+
       for (const storeDef of STORE_DEFINITIONS) {
         if (db.objectStoreNames.contains(storeDef.name)) continue;
         const store = db.createObjectStore(storeDef.name, {
