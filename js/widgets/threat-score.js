@@ -5,23 +5,38 @@
  * dashboard's filter bar (per the concept doc: filtering changes what you
  * see, not the underlying score).
  *
- * What feeds it, deliberately kept small so the result stays explainable:
+ * v2 — the original formula summed every active threat's contribution,
+ * which meant the score would structurally climb toward 100 as more
+ * reports accumulated over time, almost regardless of actual severity —
+ * a report with 15 threats scored 99/Critical even with zero incidents,
+ * actors, vulnerabilities or malware attached, purely from volume. Since
+ * this tool is built to accumulate reports, that meant the score would
+ * eventually hit Critical and stay there permanently, which defeats the
+ * point of having a differentiated score at all.
+ *
+ * Two fixes, both verified against real reports before landing on them:
+ *
+ *   1. recordType now matters. TREND-type threat records (broad
+ *      industry-wide observations, e.g. "AI is accelerating both sides
+ *      of the threat landscape") count for half the weight of CAMPAIGN /
+ *      INCIDENT_GROUP / VULNERABILITY_ACTIVITY records — those represent
+ *      something concrete and attributable; a trend is context, not a
+ *      specific active threat.
+ *
+ *   2. The score is now an AVERAGE across active threats (bounded,
+ *      doesn't inflate with volume) plus a small, saturating bonus for
+ *      having several serious concrete threats at once — "many serious
+ *      things happening simultaneously is worse than one" without letting
+ *      raw count dominate the number the way summing did.
+ *
+ * What feeds a single threat's contribution:
  *   - Severity, scaled down by how confident the report was in that
  *     assessment (a Critical rating we're only Low-confidence about counts
  *     for much less than a Critical rating rated Very High confidence).
  *   - A small bump for threats whose trend is INCREASING/ESCALATING, and a
  *     small reduction for DECLINING ones.
- *   - A small bump per confirmed incident tied to a still-active threat.
  *   - RESOLVED and HISTORICAL threat records are excluded entirely — a
  *     closed matter shouldn't keep inflating the current score.
- *
- * The raw sum is squashed into a 0-100 range with diminishing returns
- * (approaches but never reaches 100) rather than a hard cap, so score
- * growth feels smooth rather than clipped. The constant (K=12) was picked
- * by testing against the real sample report — a single, genuinely serious
- * state-sponsored-threat report lands at ~74 (High), leaving real headroom
- * for the score to climb further as more evidence accumulates across
- * imports, rather than one report alone maxing it out.
  *
  * Forecasts are not part of this at all — consistent with the rest of the
  * dashboard, this is about confirmed/active threats, not predictions.
@@ -32,7 +47,12 @@ import { escapeHtml } from '../helpers.js';
 
 const EXCLUDED_STATUSES = new Set(['RESOLVED', 'HISTORICAL']);
 const INCREASING_TRENDS = new Set(['INCREASING', 'ESCALATING']);
-const SCORE_CURVE_K = 12;
+const RECORD_TYPE_WEIGHT = { CAMPAIGN: 1.0, INCIDENT_GROUP: 1.0, VULNERABILITY_ACTIVITY: 1.0, TREND: 0.5 };
+const MAX_ITEM_SCORE = 5.5; // severity 5 * confidence ratio 1.0 + trend bump 0.5 — the ceiling a single item can reach
+const VOLUME_BONUS_MAX = 15; // points a report can gain from having several serious concrete threats at once
+const VOLUME_BONUS_K = 4;
+const INCIDENT_BONUS_PER = 2;
+const INCIDENT_BONUS_MAX = 10;
 
 const SCORE_BAND_CLASS = {
   Low: 'score-band-low',
@@ -57,9 +77,14 @@ function scoreLabel(score) {
 export function computeGlobalThreatScore(threatRecords, incidents) {
   const activeThreats = threatRecords.filter((t) => !EXCLUDED_STATUSES.has(t.threatStatus));
 
-  let rawSum = 0;
+  if (activeThreats.length === 0) {
+    return { score: 0, label: scoreLabel(0), factors: [], activeThreatCount: 0 };
+  }
+
+  let itemScoreSum = 0;
   let increasingCount = 0;
   let highOrAboveCount = 0;
+  let seriousCount = 0; // concrete (not TREND) + High/Critical severity + at least High confidence
 
   for (const t of activeThreats) {
     const confidenceRatio = (t.confidenceScore || 1) / 4;
@@ -70,26 +95,37 @@ export function computeGlobalThreatScore(threatRecords, incidents) {
     } else if (t.trendDirection === 'DECLINING') {
       trendAdjustment = -0.3;
     }
-    rawSum += Math.max(0, (t.severityScore || 0) * confidenceRatio + trendAdjustment);
+    const recordTypeWeight = RECORD_TYPE_WEIGHT[t.recordType] ?? 1.0; // unrecognised/missing type defaults to full weight
+    const itemScore = Math.max(0, ((t.severityScore || 0) * confidenceRatio + trendAdjustment) * recordTypeWeight);
+    itemScoreSum += itemScore;
+
     if ((t.severityScore || 0) >= 4) highOrAboveCount += 1;
+    if (t.recordType !== 'TREND' && (t.severityScore || 0) >= 4 && (t.confidenceScore || 0) >= 3) {
+      seriousCount += 1;
+    }
   }
+
+  const avgItemScore = itemScoreSum / activeThreats.length;
+  const baseScore = Math.min(100, (avgItemScore / MAX_ITEM_SCORE) * 100);
+  const volumeBonus = VOLUME_BONUS_MAX * (1 - Math.exp(-seriousCount / VOLUME_BONUS_K));
 
   const activeThreatIds = new Set(activeThreats.map((t) => t.threatId));
   const relevantIncidentCount = incidents.filter((inc) => activeThreatIds.has(inc.parentThreatId)).length;
-  rawSum += relevantIncidentCount * 0.5;
+  const incidentBonus = Math.min(INCIDENT_BONUS_MAX, relevantIncidentCount * INCIDENT_BONUS_PER);
 
-  const score = Math.round(100 * (1 - Math.exp(-rawSum / SCORE_CURVE_K)));
+  const score = Math.min(100, Math.round(baseScore + volumeBonus + incidentBonus));
   const label = scoreLabel(score);
 
   const factors = [];
-  if (activeThreats.length > 0) {
-    factors.push(`${activeThreats.length} active threat record${activeThreats.length === 1 ? '' : 's'}`);
-  }
+  factors.push(`${activeThreats.length} active threat record${activeThreats.length === 1 ? '' : 's'}`);
   if (highOrAboveCount > 0) {
     factors.push(`${highOrAboveCount} rated High or Critical severity`);
   }
   if (increasingCount > 0) {
     factors.push(`${increasingCount} showing an increasing or escalating trend`);
+  }
+  if (seriousCount > 0) {
+    factors.push(`${seriousCount} confirmed or attributable (not trend-level) threat${seriousCount === 1 ? '' : 's'} at High/Critical severity`);
   }
   if (relevantIncidentCount > 0) {
     factors.push(`${relevantIncidentCount} confirmed incident${relevantIncidentCount === 1 ? '' : 's'} tied to an active threat`);
