@@ -1,19 +1,20 @@
 /**
  * app.js — dashboard shell bootstrap.
  *
- * Renders every widget from a single registry (WIDGETS below). All 12
- * widgets from the original concept are live.
+ * Renders every widget from a single registry (WIDGETS below). 9 of the
+ * original 12 concept widgets are live — Key Findings, Emerging Threats,
+ * and Recent Data Changes were deliberately removed from the dashboard.
  *
  * Also handles: report import (with cross-report duplicate detection for
  * CVEs/malware names, and a review step when duplicates are found), the
  * filter bar (sector/client/severity/time — applied across every widget
- * except Global Threat Score, Recent Reports and Recent Data Changes,
- * which always reflect everything imported), the threat detail modal
- * (click any threat title anywhere to see everything linked to it), the
- * Settings panel (storage info, full backup export/restore, clear all
- * data), and deleting a specific report (safely re-homing any
- * vulnerability/malware record another report still depends on, rather
- * than leaving it with a dangling reference).
+ * except Global Threat Score and Recent Reports, which always reflect
+ * everything imported), the threat detail modal (click any threat title
+ * anywhere to see everything linked to it), the Settings panel (storage
+ * info, full backup export/restore, clear all data), and deleting a
+ * specific report (safely re-homing any vulnerability/malware record
+ * another report still depends on, rather than leaving it with a
+ * dangling reference).
  *
  * Deliberately NOT built yet: remembering widget layout (collapsed/closed
  * state, positions) across reloads. Also, duplicate detection only covers
@@ -25,8 +26,8 @@
 import { dbGetAll, bulkWriteRecords, addAuditLogEntry, resetDatabase, getStorageEstimate } from './db.js';
 import { parseReport } from './parser.js';
 import { detectDuplicates, resolveDuplicates } from './duplicate-detection.js';
-import { filterState, getFilteredThreatRecords, getFilteredChildRecords, isAnyFilterActive } from './filters.js';
-import { escapeHtml, humanize, severityChip, citeChip, formatDateUK, formatDateTimeUK } from './helpers.js';
+import { filterState } from './filters.js';
+import { escapeHtml, humanize, citeChip, formatDateUK } from './helpers.js';
 import { exportAllData, downloadJson, restoreFromBackup } from './backup.js';
 import { analyzeReportDeletion, deleteReport } from './report-deletion.js';
 import { extractTextFromFile } from './file-extraction.js';
@@ -38,39 +39,6 @@ import { renderMitreOverview } from './widgets/mitre-overview.js';
 import { renderClientRelevance } from './widgets/client-relevance.js';
 import { renderGlobalThreatScore } from './widgets/threat-score.js';
 import { wireDetailModal } from './threat-detail.js';
-
-// ---------------------------------------------------------------------------
-// Real widget: Key Findings
-// ---------------------------------------------------------------------------
-
-async function renderKeyFindings(container) {
-  const [threatRecords, incidents] = await Promise.all([
-    getFilteredThreatRecords(),
-    getFilteredChildRecords('incidents'),
-  ]);
-
-  if (threatRecords.length === 0) {
-    container.innerHTML = isAnyFilterActive()
-      ? '<p class="tile-placeholder-note">Nothing matches the current filters.</p>'
-      : '<p class="tile-placeholder-note">No reports imported yet. Use "Import report" above to load one.</p>';
-    return;
-  }
-
-  const highestSeverity = threatRecords.reduce((max, record) => {
-    if (max === null) return record;
-    return (record.severityScore || 0) > (max.severityScore || 0) ? record : max;
-  }, null);
-
-  container.innerHTML = `
-    <div class="stat-row"><span>Threat records tracked</span><strong>${threatRecords.length}</strong></div>
-    <div class="stat-row"><span>Confirmed incidents</span><strong>${incidents.length}</strong></div>
-    <div class="stat-row highlight">
-      <span>Highest severity</span>
-      <span>${severityChip(highestSeverity)} ${citeChip(highestSeverity.sourceCitationIds)}</span>
-    </div>
-    <p class="tile-footnote clickable-title" data-threat-id="${escapeHtml(highestSeverity.threatId)}">${escapeHtml(highestSeverity.threatTitle)}</p>
-  `;
-}
 
 // ---------------------------------------------------------------------------
 // Real widget: Recent Reports
@@ -140,60 +108,6 @@ async function handleDeleteReportClick(reportId, reportTitle) {
 }
 
 // ---------------------------------------------------------------------------
-// Real widget: Recent Data Changes
-// ---------------------------------------------------------------------------
-
-function auditEntryDescription(entry) {
-  if (entry.action === 'IMPORT') {
-    const threatPart = `${entry.threatRecordCount} threat record${entry.threatRecordCount === 1 ? '' : 's'}`;
-    const incidentPart = `${entry.incidentCount} incident${entry.incidentCount === 1 ? '' : 's'}`;
-    return `Imported "${entry.reportTitle}" — ${threatPart}, ${incidentPart}`;
-  }
-  return 'Unrecognised change';
-}
-
-async function renderRecentChanges(container) {
-  const auditLog = await dbGetAll('auditLog');
-
-  if (auditLog.length === 0) {
-    container.innerHTML = '<p class="tile-placeholder-note">No changes logged yet — this fills in as reports are imported.</p>';
-    return;
-  }
-
-  const sorted = [...auditLog].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-  container.innerHTML = `<div class="tile-scroll-list">${sorted.map((entry) => `
-    <div class="report-row">
-      <div class="report-row-title">${escapeHtml(auditEntryDescription(entry))}</div>
-      <div class="report-row-meta">${escapeHtml(formatDateTimeUK(entry.timestamp))}</div>
-    </div>
-  `).join('')}</div>`;
-}
-
-// ---------------------------------------------------------------------------
-// Real widget: Emerging Threats
-// ---------------------------------------------------------------------------
-
-async function renderEmergingThreats(container) {
-  const threatRecords = await getFilteredThreatRecords();
-  const emergingThreats = threatRecords.filter((t) => t.trendDirection === 'EMERGING');
-
-  if (emergingThreats.length === 0) {
-    container.innerHTML = '<p class="tile-placeholder-note">Nothing currently marked as an emerging trend.</p>';
-    return;
-  }
-
-  const threatsHtml = emergingThreats.map((t) => `
-    <div class="report-row">
-      <div class="report-row-title clickable-title" data-threat-id="${escapeHtml(t.threatId)}">${escapeHtml(t.threatTitle)}</div>
-      <div class="report-row-meta">${severityChip(t)} ${citeChip(t.sourceCitationIds)} &middot; ${escapeHtml(humanize(t.primarySector))}</div>
-    </div>
-  `).join('');
-
-  container.innerHTML = `<div class="tile-scroll-list">${threatsHtml}</div>`;
-}
-
-// ---------------------------------------------------------------------------
 // Real widget: Exercise Planning
 // ---------------------------------------------------------------------------
 
@@ -260,10 +174,6 @@ const WIDGETS = [
     render: renderGlobalThreatScore,
   },
   {
-    id: 'key-findings', title: 'Key Findings', span: 'medium', status: 'live',
-    render: renderKeyFindings,
-  },
-  {
     id: 'timeline', title: 'Threat Timeline', span: 'half-tall', status: 'live',
     render: renderThreatTimeline,
   },
@@ -280,10 +190,6 @@ const WIDGETS = [
     render: renderMitreOverview,
   },
   {
-    id: 'emerging-threats', title: 'Emerging Threats', span: 'half', status: 'live',
-    render: renderEmergingThreats,
-  },
-  {
     id: 'client-relevance', title: 'Client Relevance', span: 'half', status: 'live',
     render: renderClientRelevance,
   },
@@ -294,10 +200,6 @@ const WIDGETS = [
   {
     id: 'recent-reports', title: 'Recent Reports', span: 'half', status: 'live',
     render: renderRecentReports,
-  },
-  {
-    id: 'recent-changes', title: 'Recent Data Changes', span: 'full', status: 'live',
-    render: renderRecentChanges,
   },
 ];
 
