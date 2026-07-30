@@ -81,19 +81,13 @@ function considerationRow(item) {
 // ---------------------------------------------------------------------------
 
 export async function renderClientRelevance(container) {
-  const [clients, threatRecords, exerciseConsiderations, locations, vulnerabilities] = await Promise.all([
+  const [clients, threatRecords, exerciseConsiderations, vulnerabilities] = await Promise.all([
     dbGetAll('clients'),
     getFilteredThreatRecords({ ignoreClient: true }),
     getFilteredChildRecords('exerciseConsiderations', 'parentThreatId', { ignoreClient: true }),
-    dbGetAll('locations'),
     dbGetAll('vulnerabilities'),
   ]);
 
-  const locationsByThreatId = new Map();
-  for (const loc of locations) {
-    if (!locationsByThreatId.has(loc.parentThreatId)) locationsByThreatId.set(loc.parentThreatId, []);
-    locationsByThreatId.get(loc.parentThreatId).push(loc);
-  }
   const vulnerabilitiesByThreatId = new Map();
   for (const v of vulnerabilities) {
     if (!vulnerabilitiesByThreatId.has(v.parentThreatId)) vulnerabilitiesByThreatId.set(v.parentThreatId, []);
@@ -147,7 +141,7 @@ export async function renderClientRelevance(container) {
     const exactConsiderations = findExactlyTaggedConsiderations(client, exerciseConsiderations);
     const exactThreatIds = new Set(exactThreats.map((t) => t.threatId));
     const possibleMatches = findPossiblyRelevantThreats(
-      client, threatRecords, locationsByThreatId, vulnerabilitiesByThreatId, exactThreatIds
+      client, threatRecords, vulnerabilitiesByThreatId, exactThreatIds
     );
 
     const detailLine = [

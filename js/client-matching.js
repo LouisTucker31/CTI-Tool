@@ -1,14 +1,26 @@
 /**
  * client-matching.js — suggesting which threats might be relevant to a
- * manually-defined client, based on sector/location overlap.
+ * manually-defined client, based on sector/technology/supplier overlap.
  *
  * Deliberately NOT the same thing as the existing exact clientTags match
- * (in client-relevance.js) — a shared sector or location is a much weaker
- * signal than a report explicitly naming the client, so this is kept as a
- * clearly separate, clearly-labelled suggestion rather than merged into
+ * (in client-relevance.js) — a shared sector is a much weaker signal than
+ * a report explicitly naming the client, so this is kept as a clearly
+ * separate, clearly-labelled suggestion rather than merged into
  * "confirmed" relevance. This mirrors a principle already written into the
  * report-generation prompt itself: sector similarity alone is not evidence
  * of client relevance, just a reason to go and check.
+ *
+ * Location is deliberately NOT part of matching (the client location field
+ * still exists, just for reference) — a threat sharing a client's country
+ * is extremely weak evidence of relevance in practice; most reports only
+ * tag locations at country/report-scope level, so it ends up matching
+ * almost everything for almost every client and adds no real signal.
+ *
+ * Similarly, a threat tagged PRIMARY_SECTOR: ALL is NOT auto-matched to
+ * every client's sector — that would fire identically regardless of which
+ * client it's being checked against, so it provides no actual
+ * discrimination between clients either. Sector matching only fires on a
+ * genuine match to the client's own stated sector.
  *
  * Name matching for the *exact* tier normalizes both sides (uppercase,
  * spaces/hyphens collapsed to underscores) and allows a "contains" match
@@ -55,18 +67,16 @@ export function findExactlyTaggedConsiderations(client, exerciseConsiderations) 
 
 /**
  * Threats NOT already exactly tagged to this client, but sharing its
- * sector, location, a named technology/system, or a named supplier —
- * returned with the specific reason(s) so the person can judge whether
- * the overlap actually means anything.
+ * sector, a named technology/system, or a named supplier — returned with
+ * the specific reason(s) so the person can judge whether the overlap
+ * actually means anything.
  *
- * @param locationsByThreatId Map<threatId, Array<location>>
  * @param vulnerabilitiesByThreatId Map<threatId, Array<vulnerability>>
- *   Both grouped by parentThreatId ahead of time, so this stays a pure,
+ *   grouped by parentThreatId ahead of time, so this stays a pure,
  *   easily-testable function with no DB access of its own.
  */
-export function findPossiblyRelevantThreats(client, threatRecords, locationsByThreatId, vulnerabilitiesByThreatId, excludeThreatIds) {
+export function findPossiblyRelevantThreats(client, threatRecords, vulnerabilitiesByThreatId, excludeThreatIds) {
   const clientSector = normalize(client.sector);
-  const clientLocation = normalize(client.location);
   const clientTechs = splitList(client.technologies);
   const clientSuppliers = splitList(client.suppliers);
   const matches = [];
@@ -78,14 +88,9 @@ export function findPossiblyRelevantThreats(client, threatRecords, locationsByTh
 
     const sectorMatches = clientSector && (
       t.primarySector === clientSector ||
-      t.primarySector === 'ALL' ||
       (t.additionalSectors || []).includes(clientSector)
     );
     if (sectorMatches) reasons.push('sector');
-
-    const locations = locationsByThreatId.get(t.threatId) || [];
-    const locationMatches = clientLocation && locations.some((loc) => loc.country === clientLocation);
-    if (locationMatches) reasons.push('location');
 
     if (clientTechs.length > 0) {
       const vulns = vulnerabilitiesByThreatId.get(t.threatId) || [];
