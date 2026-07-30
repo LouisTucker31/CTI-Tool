@@ -949,3 +949,37 @@ button:focus-visible, select:focus-visible, a:focus-visible {
   border-color: var(--accent-critical);
   color: var(--accent-critical);
 }
+
+/* ---------------------------------------------------------------------
+   Custom scrollbar — matches the dark theme instead of the OS default.
+   Applied via the universal selector so every scrollable area (timeline,
+   category lists, modals, anything added later) gets it automatically —
+   these properties have no effect on elements that don't actually scroll,
+   so there's no downside to applying it broadly rather than enumerating
+   every scrollable class by hand.
+------------------------------------------------------------------------ */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-hairline-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--border-hairline-strong);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent-low);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
