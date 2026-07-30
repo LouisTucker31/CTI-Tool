@@ -86,7 +86,7 @@ function methodRow(entry) {
 function vulnerabilityRow(vuln) {
   return `
     <div class="report-row">
-      <div class="report-row-title">${escapeHtml(vuln.cveId || vuln.vulnerabilityName || 'Unnamed vulnerability')}</div>
+      <div class="report-row-title clickable-title" data-threat-id="${escapeHtml(vuln.parentThreatId)}">${escapeHtml(vuln.cveId || vuln.vulnerabilityName || 'Unnamed vulnerability')}</div>
       <div class="report-row-meta">
         ${severityChip(vuln)} ${escapeHtml(humanize(vuln.exploitationStatus))} ${citeChip(vuln.sourceCitationIds)}
       </div>
@@ -98,7 +98,7 @@ function vulnerabilityRow(vuln) {
 function malwareRow(item) {
   return `
     <div class="report-row">
-      <div class="report-row-title">${escapeHtml(humanize(item.name) || 'Unnamed')}</div>
+      <div class="report-row-title clickable-title" data-threat-id="${escapeHtml(item.parentThreatId)}">${escapeHtml(humanize(item.name) || 'Unnamed')}</div>
       <div class="report-row-meta">
         ${escapeHtml(humanize(item.type))}
         &middot; Confidence: ${escapeHtml(item.confidenceLabel || 'Unknown')}
