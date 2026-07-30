@@ -381,7 +381,7 @@ body {
    Hidden-widgets tray
 ------------------------------------------------------------------------ */
 
-.hidden-tray {
+.hidden-tray:not([hidden]) {
   padding: 0 2rem 2rem;
   display: flex;
   gap: 0.5rem;
@@ -718,7 +718,7 @@ button:focus-visible, select:focus-visible, a:focus-visible {
    Generic widget select control (Client Relevance, and reusable elsewhere)
 ------------------------------------------------------------------------ */
 
-.widget-select-control {
+.widget-select-control:not([hidden]) {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -1000,24 +1000,28 @@ button:focus-visible, select:focus-visible, a:focus-visible {
    Client Relevance — add-client form
 ------------------------------------------------------------------------ */
 
-.add-client-form {
+.add-client-form-fields {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 0.8rem;
-  margin-bottom: 0.8rem;
-  background: var(--bg-base);
-  border: 1px solid var(--border-hairline-strong);
-  border-radius: var(--radius);
+  gap: 0.7rem;
+  margin: 0.6rem 0 1rem;
 }
 
-.add-client-form input {
-  background: var(--bg-panel);
+.add-client-form-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.add-client-form-fields input {
+  background: var(--bg-base);
   border: 1px solid var(--border-hairline-strong);
   color: var(--text-primary);
   font-family: var(--font-body);
   font-size: 0.85rem;
-  padding: 0.4rem 0.6rem;
+  padding: 0.45rem 0.65rem;
   border-radius: 4px;
 }
 

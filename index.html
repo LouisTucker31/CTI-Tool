@@ -112,6 +112,38 @@
   </div>
 </div>
 
+<div class="detail-modal-backdrop" id="addClientModalBackdrop" hidden>
+  <div class="detail-modal">
+    <button type="button" class="detail-modal-close" id="addClientModalClose" aria-label="Close">&times;</button>
+    <p class="settings-title">Add client</p>
+    <form id="addClientForm">
+      <div class="add-client-form-fields">
+        <label>Name (required)
+          <input type="text" id="newClientName" required>
+        </label>
+        <label>Sector
+          <input type="text" id="newClientSector" list="clientSectorOptions" placeholder="e.g. Government">
+        </label>
+        <label>Location
+          <input type="text" id="newClientLocation" list="clientLocationOptions" placeholder="e.g. United Kingdom">
+        </label>
+        <label>Technologies/systems used
+          <input type="text" id="newClientTechnologies" placeholder="e.g. Ivanti Connect Secure, Microsoft Exchange">
+        </label>
+        <label>Key suppliers/third parties
+          <input type="text" id="newClientSuppliers" placeholder="e.g. Collins Aerospace">
+        </label>
+      </div>
+      <div class="add-client-form-actions">
+        <button type="submit" class="btn">Save</button>
+        <button type="button" class="btn" id="cancelAddClientBtn">Cancel</button>
+      </div>
+    </form>
+    <datalist id="clientSectorOptions"></datalist>
+    <datalist id="clientLocationOptions"></datalist>
+  </div>
+</div>
+
 <script type="module" src="js/app.js"></script>
 </body>
 </html>

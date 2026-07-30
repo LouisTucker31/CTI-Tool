@@ -23,7 +23,7 @@
  * matching rather than an exact key.
  */
 
-import { dbGetAll, bulkWriteRecords, addAuditLogEntry, resetDatabase, getStorageEstimate } from './db.js';
+import { dbGetAll, bulkWriteRecords, addAuditLogEntry, resetDatabase, getStorageEstimate, dbPut } from './db.js';
 import { parseReport } from './parser.js';
 import { detectDuplicates, resolveDuplicates, detectPossibleMatches } from './duplicate-detection.js';
 import { filterState } from './filters.js';
@@ -529,6 +529,70 @@ function wireSettingsModal() {
 }
 
 // ---------------------------------------------------------------------------
+// Add Client modal
+// ---------------------------------------------------------------------------
+
+async function populateClientFormDatalists() {
+  const threatRecords = await dbGetAll('threatRecords');
+  const sectors = [...new Set(threatRecords.map((t) => t.primarySector).filter((s) => s && s !== 'ALL'))].sort();
+  const { COUNTRY_CENTROIDS } = await import('./widgets/map.js');
+  const countries = Object.keys(COUNTRY_CENTROIDS).sort();
+
+  const sectorList = document.getElementById('clientSectorOptions');
+  const locationList = document.getElementById('clientLocationOptions');
+  sectorList.innerHTML = sectors.map((s) => `<option value="${escapeHtml(s)}">`).join('');
+  locationList.innerHTML = countries.map((c) => `<option value="${escapeHtml(c)}">`).join('');
+}
+
+function wireAddClientModal() {
+  const backdrop = document.getElementById('addClientModalBackdrop');
+  const closeBtn = document.getElementById('addClientModalClose');
+  const cancelBtn = document.getElementById('cancelAddClientBtn');
+  const formEl = document.getElementById('addClientForm');
+
+  function hide() {
+    backdrop.hidden = true;
+    formEl.reset();
+  }
+
+  async function show() {
+    await populateClientFormDatalists();
+    backdrop.hidden = false;
+    document.getElementById('newClientName').focus();
+  }
+
+  closeBtn.addEventListener('click', hide);
+  cancelBtn.addEventListener('click', hide);
+  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) hide(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !backdrop.hidden) hide(); });
+
+  // Any widget can open this modal by just un-hiding it directly — expose
+  // a single global entry point so client-relevance.js doesn't need its
+  // own copy of the datalist-population logic.
+  window.__openAddClientModal = show;
+
+  formEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('newClientName').value.trim();
+    if (!name) return;
+
+    const normalize = (v) => v.trim().toUpperCase().replace(/[\s-]+/g, '_');
+    await dbPut('clients', {
+      clientId: `CLIENT-${Date.now()}`,
+      name,
+      sector: document.getElementById('newClientSector').value.trim() ? normalize(document.getElementById('newClientSector').value) : null,
+      location: document.getElementById('newClientLocation').value.trim() ? normalize(document.getElementById('newClientLocation').value) : null,
+      technologies: document.getElementById('newClientTechnologies').value.trim() || null,
+      suppliers: document.getElementById('newClientSuppliers').value.trim() || null,
+      dateAdded: new Date().toISOString(),
+    });
+
+    hide();
+    await refreshLiveWidgets();
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Boot
 // ---------------------------------------------------------------------------
 
@@ -540,6 +604,7 @@ async function boot() {
   wireFilterBar();
   wireDetailModal();
   wireSettingsModal();
+  wireAddClientModal();
 
   for (const widget of WIDGETS) {
     const tile = buildTile(widget);
