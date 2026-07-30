@@ -60,6 +60,18 @@ body {
   border-bottom: 1px solid var(--border-hairline);
 }
 
+.app-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.app-logo {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+}
+
 .app-title {
   font-family: var(--font-display);
   font-weight: 600;
