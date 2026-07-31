@@ -23,7 +23,7 @@
 
 import { dbGetAll, bulkWriteRecords } from './db.js';
 
-const FEED_API_URL = 'https://dailydoesofcybersecuritynews.com/api/articles';
+const FEED_API_URL = 'https://cloudfare-workerjs.louistucker311097.workers.dev/api/articles';
 
 /** Raw FreeIntelHub article -> our feedArticles row shape. */
 export function normalizeArticle(raw) {

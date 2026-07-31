@@ -203,7 +203,7 @@ const WIDGETS = [
     render: renderExercisePlanning,
   },
   {
-    id: 'live-feed', title: 'Live Threat Feed (FreeIntelHub)', span: 'large-tall', status: 'live',
+    id: 'live-feed', title: 'Live Threat Feed (FreeIntelHub)', span: 'full', status: 'live',
     render: renderLiveFeed,
   },
 ];
