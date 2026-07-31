@@ -38,6 +38,7 @@ import { renderCategoryOverview } from './widgets/category-overview.js';
 import { renderMitreOverview } from './widgets/mitre-overview.js';
 import { renderClientRelevance } from './widgets/client-relevance.js';
 import { renderGlobalThreatScore } from './widgets/threat-score.js';
+import { renderLiveFeed } from './widgets/live-feed.js';
 import { wireDetailModal } from './threat-detail.js';
 
 // ---------------------------------------------------------------------------
@@ -200,6 +201,10 @@ const WIDGETS = [
   {
     id: 'exercise-planning', title: 'Exercise Planning', span: 'half', status: 'live',
     render: renderExercisePlanning,
+  },
+  {
+    id: 'live-feed', title: 'Live Threat Feed (FreeIntelHub)', span: 'large-tall', status: 'live',
+    render: renderLiveFeed,
   },
 ];
 

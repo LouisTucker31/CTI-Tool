@@ -1029,3 +1029,62 @@ button:focus-visible, select:focus-visible, a:focus-visible {
   display: flex;
   gap: 0.5rem;
 }
+
+/* ---------------------------------------------------------------------- */
+/* Live Feed widget (js/widgets/live-feed.js)                              */
+/* ---------------------------------------------------------------------- */
+
+.livefeed-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.livefeed-controls select,
+.livefeed-controls input[type="text"] {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border-hairline-strong);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+.livefeed-controls input[type="text"] {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+
+.livefeed-list {
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.livefeed-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.livefeed-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.15rem;
+}
+
+.livefeed-tag {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  background: rgba(107, 122, 153, 0.15);
+  color: var(--text-secondary);
+}
+
+.livefeed-tlp-white { background: rgba(230, 233, 240, 0.12); }
+.livefeed-tlp-green { background: rgba(59, 167, 105, 0.15); color: #3ba769; }
+.livefeed-tlp-amber { background: rgba(209, 161, 63, 0.15); color: #d1a13f; }
+.livefeed-tlp-red { background: rgba(209, 69, 61, 0.15); color: #d1453d; }

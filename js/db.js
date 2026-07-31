@@ -20,7 +20,8 @@
 // ---------------------------------------------------------------------------
 
 const DB_NAME = 'cti-visualisation-tool';
-const DB_VERSION = 2; // v2: 'clients' store's keyPath fixed from 'clientName' to 'clientId'
+const DB_VERSION = 3; // v3: added 'feedArticles' store for the FreeIntelHub live feed integration
+// v2: 'clients' store's keyPath fixed from 'clientName' to 'clientId'
 
 const STORE_DEFINITIONS = [
   {
@@ -129,6 +130,24 @@ const STORE_DEFINITIONS = [
     name: 'clients',
     keyPath: 'clientId',
     indexes: [],
+  },
+  {
+    // Raw live-feed articles pulled from the FreeIntelHub API. Deliberately
+    // NOT shoehorned into threatRecords — those rows carry analyst-derived
+    // severity/confidence scores this feed data doesn't have, and the schema
+    // doc's own "every displayed item must be traceable to a source" rule
+    // means we shouldn't invent scores for a raw news item. This store keeps
+    // the feed's own fields as-is; clientTags is the one manual/editable field,
+    // added in the dashboard rather than supplied by the feed.
+    name: 'feedArticles',
+    keyPath: 'articleId',
+    indexes: [
+      { name: 'publishedAt', keyPath: 'publishedAt' },
+      { name: 'sector', keyPath: 'sector' },
+      { name: 'category', keyPath: 'category' },
+      { name: 'source', keyPath: 'source' },
+      { name: 'clientTags', keyPath: 'clientTags', multiEntry: true },
+    ],
   },
   {
     name: 'auditLog',
